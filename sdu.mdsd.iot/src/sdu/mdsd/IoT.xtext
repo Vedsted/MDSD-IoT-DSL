@@ -1,0 +1,196 @@
+grammar sdu.mdsd.IoT with org.eclipse.xtext.common.Terminals
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+generate ioT "http://www.mdsd.sdu/IoT"
+
+Model:
+	externalDeclarations+=ExternalDeclaration*
+	configs+=Config*
+	devices+=Device*
+;
+
+
+terminal IP returns ecore::EString: INT'.'INT'.'INT'.'INT;
+terminal WINDOWS_SERIAL returns ecore::EString: 'COM'INT;
+
+ExternalDeclaration:
+	'external' name=ID '(' type=STRING ')'
+;
+
+
+/*
+ * Configurations
+ */
+Config:
+	(
+		{ConnectionConfig} 'connectionConfig' | 
+		{DeviceConfig} 'deviceConfig'
+	)  
+	name=ID '{'
+		declarations+=Declaration*
+	'}'
+;
+
+Declaration:
+	key=STRING':'value=STRING
+;
+
+/*
+ * Device 
+ */
+Device:
+	'device' name=ID '{'
+		program=Program
+	'}'
+;
+
+Program:
+	connectStatements+=ConnectStatement*
+	variables+=VarOrList*
+	loops+=Loop+
+;
+
+ConnectStatement:
+		'connect' 'to' device=[Device] 'on' address=Address 'using' configuration=[ConnectionConfig]
+;
+
+Address:
+	{IpAddress} value=IP | 
+	{WindowsSerialAddress} value=WINDOWS_SERIAL | 
+	{UnixSerialAddress} value=STRING // TODO: validation
+;
+
+
+VarOrList:
+	({Variable}'var' | {List} 'list') name=ID
+;
+
+Loop:
+	('always'|'every' timeVal=INT timeUnit=TIMEUNIT) '{'
+		command+=Command*
+	'}'
+;
+
+TIMEUNIT:
+	{MILLISECONDS} 'MILLISECONDS' 	|
+	{SECONDS} 'SECONDS' 			|
+	{MINUTES} 'MINUTES'				|
+	{HOURS} 'HOURS'					|
+	{DAYS} 'DAYS'					|
+	{WEEKS} 'WEEKS'					|
+	{MONTHS} 'MONTHS'				|
+	{YEARS}	'YEARS'		
+;
+
+
+Command:
+	Action | ArrowCommand | IfStatement
+;
+
+Action returns Command:
+	ClearListAction |
+	LEDAction
+;
+
+ClearListAction returns Action:
+	'clear' list=[List]
+;
+
+LEDAction returns Action:
+	'set' 'LED' state=('ON'|'OFF')
+;
+
+ArrowCommand returns Command:
+	left=ExpressionLeft '->' right=ExpressionRight
+;
+
+ExpressionLeft:
+	 ExternalOf | ReadSensor | ReadConnection | ReadVariable
+;
+
+ReadVariable:
+	'read' 'var' value=[Variable]
+;
+
+ReadConnection:
+	'read' 'from' source=[Device]
+;
+
+ExternalOf:
+	method=[ExternalDeclaration] 'of' target=[VarOrList]
+;
+
+ReadSensor:
+	'read' 'from' sensor=SENSOR	
+;
+
+SENSOR:
+	{LIGHTSENSOR} 'LIGHTSENSOR' |
+	{TEMPERATURE} 'TEMPERATURE'	|
+	{HUMIDITY}	'HUMIDITY'	
+;
+
+
+
+ExpressionRight:
+	SendCommand | AddToList | ToVar
+;
+
+ToVar returns ExpressionRight:
+	'to' variable=[Variable]
+;
+
+AddToList returns ExpressionRight:
+	'add' 'to' list=[List]
+;
+
+SendCommand returns ExpressionRight:
+	'send' 'to' target=[Device]
+;
+
+/*
+ * TODO: 5 < 10 < 15 
+ */
+IfStatement returns Command:
+	'if' condition=Comparison '{' commands+=Command+ '}' (elseBlock=ElseBlock)?
+;
+
+ElseBlock:
+	'else' '{' commands+=Command+ '}'
+;
+
+
+Comparison:
+	OR	
+;
+
+OR returns Comparison:
+	AND ({OR.left=current} ('||'|'OR') right=AND)*
+;
+
+AND returns Comparison:
+	EQL ({AND.left=current} ('&&'|'AND') right=EQL)*
+;
+
+EQL returns Comparison:
+	Item ({EQL.left=current} op=ComparisonOp right=Item)*
+;
+
+Item:
+	{ItemVariable} value=[Variable] |
+	{ItemInt} value=INT |
+	{ItemBool} value=Bool
+;
+
+ComparisonOp:
+	{GT} '>' |
+	{LT} '<' | 
+	{LE}'<=' |
+	{GE} '>=' | 
+	{EQ} '==' |
+	{NE} '!='
+;
+
+Bool:
+	{True} ('TRUE'|'true') | {False} ('FALSE'|'false')
+;
+

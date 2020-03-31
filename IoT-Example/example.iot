@@ -1,0 +1,47 @@
+external median("int")
+
+connectionConfig WifiConnection{
+	"type": "WLAN"
+	"networkSSID": "eduroam"
+	"password": "Passw0rd!"
+}
+
+device LightSensingDevice {
+	connect to Controller on '192.168.0.1' using WifiConnection
+	
+	list luxValues
+	var lux
+	
+	every 1 SECONDS {
+		// This 
+    	read from LIGHTSENSOR -> to lux 
+    	if lux < 50 {
+    		read var lux -> send to Controller
+    	}
+    	
+    	/* OR  ('it' is the key word for the output value of the previous read-expression)
+    	*	read from LIGHTSENSOR -> it < 50 -> send to Controller
+    	*/
+	} 
+	
+	every 30 SECONDS {
+		median of luxValues -> send to Controller
+	}
+}
+
+
+device Controller {
+	connect to LightSensingDevice on '192.168.0.2' using WifiConnection
+
+	list rawLuxValues 
+	list medainLuxValues
+
+	always {
+    	read from LightSensingDevice -> add to rawLuxValues
+	}
+
+	every 20 MINUTES {
+		median of rawLuxValues -> add to medainLuxValues
+     	clear rawLuxValues
+	}
+}
