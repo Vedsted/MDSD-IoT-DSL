@@ -21,13 +21,24 @@ ExternalDeclaration:
  * Configurations
  */
 Config:
-	(
-		{ConnectionConfig} 'connectionConfig' | 
-		{DeviceConfig} 'deviceConfig'
-	)  
-	name=ID '{'
+	ConnectionConfig | DeviceConfig
+;
+
+DeviceConfig returns Config:
+	{DeviceConfig}'deviceConfig' name=ID '{'
 		declarations+=Declaration*
 	'}'
+;
+
+ConnectionConfig returns Config:
+	{ConnectionConfig} 'connectionConfig' name=ID '{'
+		'type' ':' type=ConfigType
+		declarations+=Declaration*
+	'}'
+;
+
+ConfigType:
+	'SERIAL' | 'WLAN'
 ;
 
 Declaration:
@@ -38,7 +49,17 @@ Declaration:
  * Device 
  */
 Device:
-	'device' name=ID '{'
+	IoTDevice | ControllerDevice
+;
+
+ControllerDevice:
+	'controller' 'device' name=ID '{'
+		program=Program
+	'}'
+;
+
+IoTDevice:
+	'iot' 'device' name=ID '{'
 		program=Program
 	'}'
 ;
@@ -92,11 +113,11 @@ Action returns Command:
 ;
 
 ClearListAction returns Action:
-	'clear' list=[List]
+	{ClearListAction} 'clear' list=[List]
 ;
 
 LEDAction returns Action:
-	'set' 'LED' state=('ON'|'OFF')
+	{LEDAction} 'LED' state=('ON'|'OFF')
 ;
 
 ArrowCommand returns Command:
@@ -147,19 +168,16 @@ SendCommand returns ExpressionRight:
 	'send' 'to' target=[Device]
 ;
 
-/*
- * TODO: 5 < 10 < 15 
- */
 IfStatement returns Command:
-	'if' condition=Comparison '{' commands+=Command+ '}' (elseBlock=ElseBlock)?
+	{IfStatement}'if' condition=Comparison '{' commands+=Command+ '}' (elseBlock=ElseBlock)?
 ;
 
 ElseBlock:
-	'else' '{' commands+=Command+ '}'
+	{ElseBlock}'else' '{' commands+=Command+ '}'
 ;
 
 
-Comparison:
+Comparison returns Comparison:
 	OR	
 ;
 
@@ -172,13 +190,18 @@ AND returns Comparison:
 ;
 
 EQL returns Comparison:
-	Item ({EQL.left=current} op=ComparisonOp right=Item)*
+	Item ({EQL.left=current} op=ComparisonOp right=Item)?
 ;
 
-Item:
+Item returns Comparison:
+	Parenthasis |
 	{ItemVariable} value=[Variable] |
 	{ItemInt} value=INT |
 	{ItemBool} value=Bool
+;
+
+Parenthasis returns Comparison:
+	'(' Comparison ')' 
 ;
 
 ComparisonOp:

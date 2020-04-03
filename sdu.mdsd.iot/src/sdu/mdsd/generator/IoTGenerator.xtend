@@ -7,6 +7,23 @@ import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.xtext.generator.AbstractGenerator
 import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
+import sdu.mdsd.ioT.Device
+import sdu.mdsd.ioT.Model
+import sdu.mdsd.ioT.ConnectionConfig
+import java.util.List
+import sdu.mdsd.ioT.ConnectStatement
+import sdu.mdsd.ioT.IoTDevice
+import sdu.mdsd.ioT.ControllerDevice
+import sdu.mdsd.ioT.Declaration
+import java.util.HashMap
+import sdu.mdsd.ioT.Loop
+import sdu.mdsd.ioT.Command
+import sdu.mdsd.ioT.Action
+import sdu.mdsd.ioT.ClearListAction
+import sdu.mdsd.ioT.LEDAction
+import sdu.mdsd.services.IoTGrammarAccess.ArrowCommandElements
+import sdu.mdsd.ioT.VarOrList
+import sdu.mdsd.ioT.Variable
 
 /**
  * Generates code from your model files on save.
@@ -16,10 +33,194 @@ import org.eclipse.xtext.generator.IGeneratorContext
 class IoTGenerator extends AbstractGenerator {
 
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
+		var model = resource.allContents.filter(Model).toList
+
+		var dev = resource.allContents.filter(IoTDevice).toList.get(0)
+		System.out.println(dev.covDevice)
 //		fsa.generateFile('greetings.txt', 'People to greet: ' + 
 //			resource.allContents
 //				.filter(Greeting)
 //				.map[name]
 //				.join(', '))
 	}
+	
+	
+	def dispatch covDevice(IoTDevice device){
+		'''
+		import pycom
+		import time
+		import _thread
+		from machine import UART
+		from network import WLAN
+		
+		«FOR connectionStatement : device.program.connectStatements»
+		«connectionStatement.configuration.convConfigurationIoT»	
+		
+		«ENDFOR»
+		
+		«FOR v : device.program.variables»
+		«v.convToPy»
+		«ENDFOR»
+			
+		
+		def th_func(delay, action):
+		    while True:
+		        time.sleep(delay)
+		        action()
+		
+		
+		«device.program.loops.forEach[l, i | convLoop(l, i)]»
+		
+		
+		'''
+	}
+	
+	def convToPy(VarOrList vl){
+		switch vl {
+			Variable: '''«vl.name» = None'''
+			List: '''«vl.name» = []'''
+		}
+	}
+	
+	def convLoop(Loop loop, int i){
+		
+		
+		'''
+		def loop«i»():
+			«FOR cmd : loop.command»
+			«cmd.convCMD()»
+			«ENDFOR»
+		'''
+	}
+	
+	def convCMD(Command cmd){
+		switch cmd{
+			ClearListAction: '''«cmd.list.name» = []'''
+			LEDAction: '''pycom.rgbled(«cmd.state == 'ON' ? '0xFFFFFF':'0x000000'»)'''
+		}
+	}
+	
+	
+	
+	def dispatch covDevice(ControllerDevice device){
+		'''
+		import serial
+		import time
+		
+		
+		
+		
+		
+		
+		# Initializer
+		pycom.heartbeat(False)
+		uart = UART(0)                               # init with given bus
+		uart.init(115200, bits=8, parity=None, stop=1) # init with given parameters:  Baudrate=9600
+		
+		while True:
+		    # Receive serial communication
+		    myBytes = uart.read(1) # Read the received bytes into the byte array
+		
+		    # Parse the serial communication
+		    if myBytes != None:
+		        command = myBytes[0]
+		
+		        # React to the parsed message
+		        if command == 0:
+		            pycom.rgbled(0xffffff)
+		        elif command == 1:
+		            pycom.rgbled(0x00)
+		'''
+	}
+	
+	def convConfigurationIoT(ConnectionConfig configuration){
+		switch configuration.type {
+			case 'WLAN':{
+				val map = getWlanIotValues(configuration.declarations)
+				'''
+				SSID = '«map.get('ssid')»'
+				KEY = '«map.get('password')»'
+				
+				wlan = WLAN(mode=WLAN.STA)
+				nets = wlan.scan()
+				for net in nets:
+				    if net.ssid == SSID:
+				        print('Network found!')
+				        wlan.connect(net.ssid, auth=(net.sec, KEY), timeout=5000)
+				        while not wlan.isconnected():
+				            machine.idle() # save power while waiting
+				        print('WLAN connection succeeded!')
+				        print(wlan.ifconfig()) # Print the connection settings, IP, Subnet mask, Gateway, DNS
+				        break
+				'''
+			}
+			case 'SERIAL': {
+				var map = getSerialIotValues(configuration.declarations)
+				'''
+				uart = UART(«map.get('bus')»)
+				uart.init(«map.get('baudrate')», bits=«map.get('bits')», parity=«map.get('parity')», stop=«map.get('stopbit')»)
+				'''
+			}
+		}
+	}
+	
+	def extractDeclaration(List<Declaration> declarations, String _key){
+		val d = declarations.filter[key == _key]
+		d.length > 0 ? d.get(0) : null
+	}
+	
+	def getSerialIotValues(List<Declaration> declarations){
+		val baudrate = declarations.extractDeclaration('baudrate')?.value
+		val stopbit = declarations.extractDeclaration('stopbit')?.value
+		val bits = declarations.extractDeclaration('bits')?.value
+		val parity = declarations.extractDeclaration('parity')?.value
+		val bus = declarations.extractDeclaration('bus')?.value
+		
+		var map = new HashMap<String, String>()
+		// Serial
+		map.put('baudrate', baudrate?: '115200')
+		map.put('stopbit', stopbit?:'1')
+		map.put('bits', bits?:'8')
+		map.put('parity', parity?:'None')
+		map.put('bus', bus?:'0')
+		map
+	}
+	
+	def getWlanIotValues(List<Declaration> declarations){
+		val ssid = declarations.extractDeclaration('ssid')?.value
+		val password = declarations.extractDeclaration('password')?.value
+		
+		var map = new HashMap<String, String>()
+		// Serial
+		map.put('ssid', ssid?: 'INPUT SSID')
+		map.put('password', password?:'INPUT PASSWORD')
+		map
+	}
+	
+	
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

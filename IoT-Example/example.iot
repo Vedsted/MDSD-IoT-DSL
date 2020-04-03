@@ -1,22 +1,29 @@
 external median("int")
 
 connectionConfig WifiConnection{
-	"type": "WLAN"
-	"networkSSID": "eduroam"
+	type: WLAN
+	"ssid": "eduroam"
 	"password": "Passw0rd!"
 }
 
-device LightSensingDevice {
+connectionConfig SerialConnection {
+	type: SERIAL
+	'baudrate': '97000'
+	'stopbit': 'din mor!'
+} 
+
+iot device LightSensingDevice {
+	connect to Controller on '192.168.0.1' using SerialConnection
 	connect to Controller on '192.168.0.1' using WifiConnection
-	
+	 
 	list luxValues
 	var lux
 	
 	every 1 SECONDS {
 		// This 
     	read from LIGHTSENSOR -> to lux 
-    	if lux < 50 {
-    		read var lux -> send to Controller
+    	if lux AND lux OR 5 == true {
+    		read var lux -> send to Controller 
     	}
     	
     	/* OR  ('it' is the key word for the output value of the previous read-expression)
@@ -30,7 +37,7 @@ device LightSensingDevice {
 }
 
 
-device Controller {
+controller device Controller {
 	connect to LightSensingDevice on '192.168.0.2' using WifiConnection
 
 	list rawLuxValues 

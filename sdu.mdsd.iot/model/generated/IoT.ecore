@@ -27,6 +27,8 @@
     <eStructuralFeatures xsi:type="ecore:EReference" name="program" eType="#//Program"
         containment="true"/>
   </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ControllerDevice" eSuperTypes="#//Device"/>
+  <eClassifiers xsi:type="ecore:EClass" name="IoTDevice" eSuperTypes="#//Device"/>
   <eClassifiers xsi:type="ecore:EClass" name="Program">
     <eStructuralFeatures xsi:type="ecore:EReference" name="connectStatements" upperBound="-1"
         eType="#//ConnectStatement" containment="true"/>
@@ -60,17 +62,8 @@
         containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="right" eType="#//ExpressionRight"
         containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="condition" eType="#//Comparison"
-        containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="commands" upperBound="-1"
-        eType="#//Command" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="elseBlock" eType="#//ElseBlock"
-        containment="true"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="Action" eSuperTypes="#//Command">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="list" eType="#//List"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="state" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Action" eSuperTypes="#//Command"/>
   <eClassifiers xsi:type="ecore:EClass" name="ExpressionLeft"/>
   <eClassifiers xsi:type="ecore:EClass" name="ReadVariable" eSuperTypes="#//ExpressionLeft">
     <eStructuralFeatures xsi:type="ecore:EReference" name="value" eType="#//Variable"/>
@@ -97,11 +90,12 @@
         eType="#//Command" containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Comparison"/>
-  <eClassifiers xsi:type="ecore:EClass" name="Item" eSuperTypes="#//Comparison"/>
   <eClassifiers xsi:type="ecore:EClass" name="ComparisonOp"/>
   <eClassifiers xsi:type="ecore:EClass" name="Bool"/>
-  <eClassifiers xsi:type="ecore:EClass" name="ConnectionConfig" eSuperTypes="#//Config"/>
   <eClassifiers xsi:type="ecore:EClass" name="DeviceConfig" eSuperTypes="#//Config"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ConnectionConfig" eSuperTypes="#//Config">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="IpAddress" eSuperTypes="#//Address"/>
   <eClassifiers xsi:type="ecore:EClass" name="WindowsSerialAddress" eSuperTypes="#//Address"/>
   <eClassifiers xsi:type="ecore:EClass" name="UnixSerialAddress" eSuperTypes="#//Address"/>
@@ -115,9 +109,23 @@
   <eClassifiers xsi:type="ecore:EClass" name="WEEKS" eSuperTypes="#//TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="MONTHS" eSuperTypes="#//TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="YEARS" eSuperTypes="#//TIMEUNIT"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ClearListAction" eSuperTypes="#//Action">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="list" eType="#//List"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="LEDAction" eSuperTypes="#//Action">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="state" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="LIGHTSENSOR" eSuperTypes="#//SENSOR"/>
   <eClassifiers xsi:type="ecore:EClass" name="TEMPERATURE" eSuperTypes="#//SENSOR"/>
   <eClassifiers xsi:type="ecore:EClass" name="HUMIDITY" eSuperTypes="#//SENSOR"/>
+  <eClassifiers xsi:type="ecore:EClass" name="IfStatement" eSuperTypes="#//Command">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="condition" eType="#//Comparison"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="commands" upperBound="-1"
+        eType="#//Command" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="elseBlock" eType="#//ElseBlock"
+        containment="true"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="OR" eSuperTypes="#//Comparison">
     <eStructuralFeatures xsi:type="ecore:EReference" name="left" eType="#//Comparison"
         containment="true"/>
@@ -135,16 +143,16 @@
         containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="op" eType="#//ComparisonOp"
         containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="right" eType="#//Item"
+    <eStructuralFeatures xsi:type="ecore:EReference" name="right" eType="#//Comparison"
         containment="true"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ItemVariable" eSuperTypes="#//Item">
+  <eClassifiers xsi:type="ecore:EClass" name="ItemVariable" eSuperTypes="#//Comparison">
     <eStructuralFeatures xsi:type="ecore:EReference" name="value" eType="#//Variable"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ItemInt" eSuperTypes="#//Item">
+  <eClassifiers xsi:type="ecore:EClass" name="ItemInt" eSuperTypes="#//Comparison">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ItemBool" eSuperTypes="#//Item">
+  <eClassifiers xsi:type="ecore:EClass" name="ItemBool" eSuperTypes="#//Comparison">
     <eStructuralFeatures xsi:type="ecore:EReference" name="value" eType="#//Bool"
         containment="true"/>
   </eClassifiers>
