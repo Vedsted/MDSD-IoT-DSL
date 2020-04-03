@@ -9,22 +9,23 @@ connectionConfig WifiConnection{
 connectionConfig SerialConnection {
 	type: SERIAL
 	'baudrate': '97000'
-	'stopbit': 'din mor!'
+	'stopbit': 'din far!'
 } 
 
 iot device LightSensingDevice {
 	connect to Controller on '192.168.0.1' using SerialConnection
-	connect to Controller on '192.168.0.1' using WifiConnection
 	 
 	list luxValues
 	var lux
-	
+
 	every 1 SECONDS {
 		// This 
-    	read from LIGHTSENSOR -> to lux 
-    	if lux AND lux OR 5 == true {
-    		read var lux -> send to Controller 
-    	}
+//    	read from LIGHTSENSOR -> to lux 
+//    	if lux AND lux OR 5 == true {
+//    		read var lux -> send to Controller 
+//    	}
+		clear luxValues
+		LED OFF
     	
     	/* OR  ('it' is the key word for the output value of the previous read-expression)
     	*	read from LIGHTSENSOR -> it < 50 -> send to Controller
@@ -32,7 +33,9 @@ iot device LightSensingDevice {
 	} 
 	
 	every 30 SECONDS {
-		median of luxValues -> send to Controller
+		read var lux -> send to Controller
+		read from LIGHTSENSOR -> to lux
+		read from TEMPERATURE-> add to luxValues
 	}
 }
 

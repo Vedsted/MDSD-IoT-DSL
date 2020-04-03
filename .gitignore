@@ -2,3 +2,6 @@ bin/
 src-gen/
 xtend-gen/
 test-bin/
+/.metadata/
+
+

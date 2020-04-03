@@ -82,7 +82,7 @@ Address:
 
 
 VarOrList:
-	({Variable}'var' | {List} 'list') name=ID
+	({Variable}'var' | {PyList} 'list') name=ID
 ;
 
 Loop:
@@ -97,9 +97,8 @@ TIMEUNIT:
 	{MINUTES} 'MINUTES'				|
 	{HOURS} 'HOURS'					|
 	{DAYS} 'DAYS'					|
-	{WEEKS} 'WEEKS'					|
-	{MONTHS} 'MONTHS'				|
-	{YEARS}	'YEARS'		
+	{WEEKS} 'WEEKS'					
+
 ;
 
 
@@ -113,7 +112,7 @@ Action returns Command:
 ;
 
 ClearListAction returns Action:
-	{ClearListAction} 'clear' list=[List]
+	{ClearListAction} 'clear' list=[PyList]
 ;
 
 LEDAction returns Action:
@@ -121,7 +120,7 @@ LEDAction returns Action:
 ;
 
 ArrowCommand returns Command:
-	left=ExpressionLeft '->' right=ExpressionRight
+	{ArrowCommand} left=ExpressionLeft '->' right=ExpressionRight
 ;
 
 ExpressionLeft:
@@ -157,15 +156,15 @@ ExpressionRight:
 ;
 
 ToVar returns ExpressionRight:
-	'to' variable=[Variable]
+	{ToVar} 'to' variable=[Variable]
 ;
 
 AddToList returns ExpressionRight:
-	'add' 'to' list=[List]
+	{AddToList} 'add' 'to' list=[PyList]
 ;
 
 SendCommand returns ExpressionRight:
-	'send' 'to' target=[Device]
+	{SendCommand} 'send' 'to' target=[Device]
 ;
 
 IfStatement returns Command:

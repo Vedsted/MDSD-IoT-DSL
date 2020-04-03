@@ -57,12 +57,7 @@
         eType="#//Command" containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="TIMEUNIT"/>
-  <eClassifiers xsi:type="ecore:EClass" name="Command">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="left" eType="#//ExpressionLeft"
-        containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="right" eType="#//ExpressionRight"
-        containment="true"/>
-  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Command"/>
   <eClassifiers xsi:type="ecore:EClass" name="Action" eSuperTypes="#//Command"/>
   <eClassifiers xsi:type="ecore:EClass" name="ExpressionLeft"/>
   <eClassifiers xsi:type="ecore:EClass" name="ReadVariable" eSuperTypes="#//ExpressionLeft">
@@ -80,11 +75,7 @@
         containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="SENSOR"/>
-  <eClassifiers xsi:type="ecore:EClass" name="ExpressionRight">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="variable" eType="#//Variable"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="list" eType="#//List"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="target" eType="#//Device"/>
-  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ExpressionRight"/>
   <eClassifiers xsi:type="ecore:EClass" name="ElseBlock">
     <eStructuralFeatures xsi:type="ecore:EReference" name="commands" upperBound="-1"
         eType="#//Command" containment="true"/>
@@ -100,24 +91,37 @@
   <eClassifiers xsi:type="ecore:EClass" name="WindowsSerialAddress" eSuperTypes="#//Address"/>
   <eClassifiers xsi:type="ecore:EClass" name="UnixSerialAddress" eSuperTypes="#//Address"/>
   <eClassifiers xsi:type="ecore:EClass" name="Variable" eSuperTypes="#//VarOrList"/>
-  <eClassifiers xsi:type="ecore:EClass" name="List" eSuperTypes="#//VarOrList"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PyList" eSuperTypes="#//VarOrList"/>
   <eClassifiers xsi:type="ecore:EClass" name="MILLISECONDS" eSuperTypes="#//TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="SECONDS" eSuperTypes="#//TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="MINUTES" eSuperTypes="#//TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="HOURS" eSuperTypes="#//TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="DAYS" eSuperTypes="#//TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="WEEKS" eSuperTypes="#//TIMEUNIT"/>
-  <eClassifiers xsi:type="ecore:EClass" name="MONTHS" eSuperTypes="#//TIMEUNIT"/>
-  <eClassifiers xsi:type="ecore:EClass" name="YEARS" eSuperTypes="#//TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="ClearListAction" eSuperTypes="#//Action">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="list" eType="#//List"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="list" eType="#//PyList"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="LEDAction" eSuperTypes="#//Action">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="state" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ArrowCommand" eSuperTypes="#//Command">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="left" eType="#//ExpressionLeft"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="right" eType="#//ExpressionRight"
+        containment="true"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="LIGHTSENSOR" eSuperTypes="#//SENSOR"/>
   <eClassifiers xsi:type="ecore:EClass" name="TEMPERATURE" eSuperTypes="#//SENSOR"/>
   <eClassifiers xsi:type="ecore:EClass" name="HUMIDITY" eSuperTypes="#//SENSOR"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ToVar" eSuperTypes="#//ExpressionRight">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="variable" eType="#//Variable"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="AddToList" eSuperTypes="#//ExpressionRight">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="list" eType="#//PyList"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SendCommand" eSuperTypes="#//ExpressionRight">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="target" eType="#//Device"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="IfStatement" eSuperTypes="#//Command">
     <eStructuralFeatures xsi:type="ecore:EReference" name="condition" eType="#//Comparison"
         containment="true"/>

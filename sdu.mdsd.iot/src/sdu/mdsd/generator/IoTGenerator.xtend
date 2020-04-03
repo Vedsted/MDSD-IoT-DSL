@@ -7,23 +7,17 @@ import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.xtext.generator.AbstractGenerator
 import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
-import sdu.mdsd.ioT.Device
-import sdu.mdsd.ioT.Model
-import sdu.mdsd.ioT.ConnectionConfig
 import java.util.List
-import sdu.mdsd.ioT.ConnectStatement
-import sdu.mdsd.ioT.IoTDevice
-import sdu.mdsd.ioT.ControllerDevice
-import sdu.mdsd.ioT.Declaration
 import java.util.HashMap
-import sdu.mdsd.ioT.Loop
-import sdu.mdsd.ioT.Command
-import sdu.mdsd.ioT.Action
-import sdu.mdsd.ioT.ClearListAction
-import sdu.mdsd.ioT.LEDAction
-import sdu.mdsd.services.IoTGrammarAccess.ArrowCommandElements
-import sdu.mdsd.ioT.VarOrList
-import sdu.mdsd.ioT.Variable
+import sdu.mdsd.ioT.*
+import java.util.ArrayList
+import sdu.mdsd.ioT.ExpressionLeft
+import sdu.mdsd.ioT.ExpressionRight
+import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock
+import sdu.mdsd.ioT.SENSOR
+import java.util.UUID
+import sdu.mdsd.ioT.Device
+import sdu.mdsd.services.IoTGrammarAccess.SendCommandElements
 
 /**
  * Generates code from your model files on save.
@@ -31,6 +25,8 @@ import sdu.mdsd.ioT.Variable
  * See https://www.eclipse.org/Xtext/documentation/303_runtime_concepts.html#code-generation
  */
 class IoTGenerator extends AbstractGenerator {
+
+	private Device currentDevice;
 
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		var model = resource.allContents.filter(Model).toList
@@ -43,184 +39,294 @@ class IoTGenerator extends AbstractGenerator {
 //				.map[name]
 //				.join(', '))
 	}
-	
-	
-	def dispatch covDevice(IoTDevice device){
-		'''
-		import pycom
-		import time
-		import _thread
-		from machine import UART
-		from network import WLAN
-		
-		«FOR connectionStatement : device.program.connectStatements»
-		«connectionStatement.configuration.convConfigurationIoT»	
-		
-		«ENDFOR»
-		
-		«FOR v : device.program.variables»
-		«v.convToPy»
-		«ENDFOR»
+
+	def dispatch covDevice(IoTDevice device) {
+		currentDevice = device;
+		var loopTexts = new ArrayList<CharSequence>();
+		for (var i = 0; i < device.program.loops.length; i++) {
+			val text = device.program.loops.get(i).convLoop(i);
+			loopTexts.add(text)
+		}
+		var sensorInits = device.eResource.allContents.filter(SENSOR).map[convertSensorInitCode].toList
+
+		var string = '''
+			import pycom
+			import time
+			import _thread
+			from machine import UART,ADC, Pin
+			from network import WLAN
+			from LTR329ALS01 import LTR329ALS01
 			
-		
-		def th_func(delay, action):
-		    while True:
-		        time.sleep(delay)
-		        action()
-		
-		
-		«device.program.loops.forEach[l, i | convLoop(l, i)]»
-		
-		
+			
+			
+			«FOR connectionStatement : device.program.connectStatements»
+				«connectionStatement.configuration.convConfigurationIoT»	
+				
+			«ENDFOR»
+			
+			«FOR v : device.program.variables»
+				«v.convToPy»
+			«ENDFOR»
+			
+			«FOR s : sensorInits»
+				«s»
+			«ENDFOR»
+			
+			def th_func(delay, action):
+				while True:
+					time.sleep(delay)
+					action()
+			
+			«FOR t : loopTexts»
+				«t»
+			«ENDFOR»
+			
+			 
+			
 		'''
+		currentDevice = null;
+		return string
 	}
-	
-	def convToPy(VarOrList vl){
+
+	def CharSequence convertSensorInitCode(SENSOR s) {
+		switch (s) {
+			LIGHTSENSOR: {
+
+				'''
+					integration_time = LTR329ALS01.ALS_INT_50
+					measurement_rate = LTR329ALS01.ALS_RATE_50 
+					gain = LTR329ALS01.ALS_GAIN_1X 
+					lightsensor = LTR329ALS01(integration=integration_time, rate=measurement_rate, gain=gain)
+				'''
+			}
+			TEMPERATURE: {
+				'''
+					p_out = Pin('P19', mode=Pin.OUT)
+					p_out.value(1)
+					adc = ADC()             # create an ADC object
+					apin = adc.channel(pin='P16', attn=2)   # create an analog pin on P16
+				'''
+			}
+		}
+	}
+
+	def convToPy(VarOrList vl) {
 		switch vl {
 			Variable: '''«vl.name» = None'''
-			List: '''«vl.name» = []'''
+			PyList: '''«vl.name» = []'''
 		}
 	}
-	
-	def convLoop(Loop loop, int i){
-		
-		
-		'''
-		def loop«i»():
-			«FOR cmd : loop.command»
-			«cmd.convCMD()»
-			«ENDFOR»
+
+	def CharSequence convLoop(Loop loop, int i) {
+ 		val seconds = convertTime(loop.timeUnit, loop.timeVal)
+
+		return '''
+			def loop«i»():
+				«FOR cmd : loop.command»
+					«cmd.convCMD()»
+				«ENDFOR»
+			
+			
+			
+			_thread.start_new_thread(th_func, («seconds», loop«i»))
+			
 		'''
 	}
-	
-	def convCMD(Command cmd){
-		switch cmd{
+
+	def convertTime(TIMEUNIT timeunit, int timevalue) {
+		switch timeunit {
+			MILLISECONDS: timevalue / 1000
+			SECONDS: timevalue
+			MINUTES: timevalue * 60
+			HOURS: timevalue * 3600
+			DAYS: timevalue * 24 * 3600
+			WEEKS: timevalue * 7 * 24 * 3600
+		}
+	}
+
+	def convCMD(Command cmd) {
+
+		switch cmd {
 			ClearListAction: '''«cmd.list.name» = []'''
 			LEDAction: '''pycom.rgbled(«cmd.state == 'ON' ? '0xFFFFFF':'0x000000'»)'''
+			ArrowCommand: {
+
+				val uuid = UUID.randomUUID.toString.replace('-', '_'); // dashes are illegal in method names in python
+				'''
+					def expLeft«uuid»():
+						«cmd.left.convExpLeft»
+					
+					def expRight«uuid»(value):
+						«cmd.right.convExpRight»
+					
+					
+					result = expLeft«uuid»()
+					expRight«uuid»(result)
+					
+						
+				'''
+			}
 		}
 	}
-	
-	
-	
-	def dispatch covDevice(ControllerDevice device){
+
+	def convExpRight(ExpressionRight right) {
+		switch (right) {
+			SendCommand:
+				right.target.sendToDevice
+			AddToList: '''«right.list.name».append(value)'''
+			ToVar: '''«right.variable.name» = value'''
+		}
+	}
+
+	def getSendToDevice(Device targetDevice) {
+
+		var connectionList = this.currentDevice.program.connectStatements.filter([device == targetDevice]).toList
+		var connection = connectionList.length > 0
+				? connectionList.get(0)
+				: throw new Exception("A connection to the device not found")
+				
+		if (connection.configuration.type == "WLAN") {
+			return '''socket.send(value)'''
+		} else if (connection.configuration.type == "SERIAL") {
+			return '''uart.send(value)'''
+		} else {
+			throw new Exception("Connect config not found")
+		}
+	}
+
+	def convExpLeft(ExpressionLeft left) {
+		switch (left) {
+			ReadVariable: '''return «left.value.name»'''
+			ReadSensor:
+				left.sensor.getReadSensorCode
+			ReadConnection: {
+				left.source.readFromDevice
+			}
+			ExternalOf: '''return externals.«left.method.name»(«left.target»)'''
+		}
+	}
+
+	def CharSequence readFromDevice(Device sourceDevice) {
+		var connectionList = this.currentDevice.program.connectStatements.filter([device == sourceDevice]).toList
+		var connection = connectionList.length > 0
+				? connectionList.get(0)
+				: throw new Exception("A connection to the device not found")
+
+		if (connection.configuration.type == "WLAN") {
+			return '''return socket.recv(1024)'''
+		} else if (connection.configuration.type == "SERIAL") {
+			return '''return uart.readall()'''
+		} else {
+			throw new Exception("Connect config not found")
+		}
+	}
+
+	def getGetReadSensorCode(SENSOR sensor) {
+		switch (sensor) {
+			LIGHTSENSOR: '''
+				lux = lightsensor.light()
+				return lux
+			'''
+			TEMPERATURE: '''
+				temperature = apin()
+				return temperature
+			'''
+		}
+	}
+
+	def dispatch covDevice(ControllerDevice device) {
 		'''
-		import serial
-		import time
-		
-		
-		
-		
-		
-		
-		# Initializer
-		pycom.heartbeat(False)
-		uart = UART(0)                               # init with given bus
-		uart.init(115200, bits=8, parity=None, stop=1) # init with given parameters:  Baudrate=9600
-		
-		while True:
-		    # Receive serial communication
-		    myBytes = uart.read(1) # Read the received bytes into the byte array
-		
-		    # Parse the serial communication
-		    if myBytes != None:
-		        command = myBytes[0]
-		
-		        # React to the parsed message
-		        if command == 0:
-		            pycom.rgbled(0xffffff)
-		        elif command == 1:
-		            pycom.rgbled(0x00)
+			import serial
+			import time
+			
+			
+			
+			
+			
+			
+			# Initializer
+			pycom.heartbeat(False)
+			uart = UART(0)                               # init with given bus
+			uart.init(115200, bits=8, parity=None, stop=1) # init with given parameters:  Baudrate=9600
+			
+			while True:
+				# Receive serial communication
+				myBytes = uart.read(1) # Read the received bytes into the byte array
+			
+				# Parse the serial communication
+				if myBytes != None:
+					command = myBytes[0]
+			
+					# React to the parsed message
+					if command == 0:
+						pycom.rgbled(0xffffff)
+					elif command == 1:
+						pycom.rgbled(0x00)
 		'''
 	}
-	
-	def convConfigurationIoT(ConnectionConfig configuration){
+
+	def convConfigurationIoT(ConnectionConfig configuration) {
 		switch configuration.type {
-			case 'WLAN':{
+			case 'WLAN': {
 				val map = getWlanIotValues(configuration.declarations)
 				'''
-				SSID = '«map.get('ssid')»'
-				KEY = '«map.get('password')»'
-				
-				wlan = WLAN(mode=WLAN.STA)
-				nets = wlan.scan()
-				for net in nets:
-				    if net.ssid == SSID:
-				        print('Network found!')
-				        wlan.connect(net.ssid, auth=(net.sec, KEY), timeout=5000)
-				        while not wlan.isconnected():
-				            machine.idle() # save power while waiting
-				        print('WLAN connection succeeded!')
-				        print(wlan.ifconfig()) # Print the connection settings, IP, Subnet mask, Gateway, DNS
-				        break
+					SSID = '«map.get('ssid')»'
+					KEY = '«map.get('password')»'
+					
+					wlan = WLAN(mode=WLAN.STA)
+					nets = wlan.scan()
+					for net in nets:
+						if net.ssid == SSID:
+							print('Network found!')
+							wlan.connect(net.ssid, auth=(net.sec, KEY), timeout=5000)
+							while not wlan.isconnected():
+								machine.idle() # save power while waiting
+							print('WLAN connection succeeded!')
+							print(wlan.ifconfig()) # Print the connection settings, IP, Subnet mask, Gateway, DNS
+							break
 				'''
 			}
 			case 'SERIAL': {
 				var map = getSerialIotValues(configuration.declarations)
 				'''
-				uart = UART(«map.get('bus')»)
-				uart.init(«map.get('baudrate')», bits=«map.get('bits')», parity=«map.get('parity')», stop=«map.get('stopbit')»)
+					uart = UART(«map.get('bus')»)
+					uart.init(«map.get('baudrate')», bits=«map.get('bits')», parity=«map.get('parity')», stop=«map.get('stopbit')»)
 				'''
 			}
 		}
 	}
-	
-	def extractDeclaration(List<Declaration> declarations, String _key){
+
+	def extractDeclaration(List<Declaration> declarations, String _key) {
 		val d = declarations.filter[key == _key]
 		d.length > 0 ? d.get(0) : null
 	}
-	
-	def getSerialIotValues(List<Declaration> declarations){
+
+	def getSerialIotValues(List<Declaration> declarations) {
 		val baudrate = declarations.extractDeclaration('baudrate')?.value
 		val stopbit = declarations.extractDeclaration('stopbit')?.value
 		val bits = declarations.extractDeclaration('bits')?.value
 		val parity = declarations.extractDeclaration('parity')?.value
 		val bus = declarations.extractDeclaration('bus')?.value
-		
+
 		var map = new HashMap<String, String>()
 		// Serial
-		map.put('baudrate', baudrate?: '115200')
-		map.put('stopbit', stopbit?:'1')
-		map.put('bits', bits?:'8')
-		map.put('parity', parity?:'None')
-		map.put('bus', bus?:'0')
+		map.put('baudrate', baudrate ?: '115200')
+		map.put('stopbit', stopbit ?: '1')
+		map.put('bits', bits ?: '8')
+		map.put('parity', parity ?: 'None')
+		map.put('bus', bus ?: '0')
 		map
 	}
-	
-	def getWlanIotValues(List<Declaration> declarations){
+
+	def getWlanIotValues(List<Declaration> declarations) {
 		val ssid = declarations.extractDeclaration('ssid')?.value
 		val password = declarations.extractDeclaration('password')?.value
-		
+
 		var map = new HashMap<String, String>()
 		// Serial
-		map.put('ssid', ssid?: 'INPUT SSID')
-		map.put('password', password?:'INPUT PASSWORD')
+		map.put('ssid', ssid ?: 'INPUT SSID')
+		map.put('password', password ?: 'INPUT PASSWORD')
 		map
 	}
-	
-	
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
