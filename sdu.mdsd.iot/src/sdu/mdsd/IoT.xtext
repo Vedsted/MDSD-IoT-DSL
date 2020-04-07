@@ -82,7 +82,7 @@ Address:
 
 
 VarOrList:
-	({Variable}'var' | {PyList} 'list') name=ID
+	({Variable}'var' name=ID  ('=' value=Expression)? | {PyList} 'list' name=ID) 
 ;
 
 Loop:
@@ -124,7 +124,19 @@ ArrowCommand returns Command:
 ;
 
 ExpressionLeft:
-	 ExternalOf | ReadSensor | ReadConnection | ReadVariable
+	 ExternalOf | ReadSensor | ReadConnection | ReadVariable | Expression
+;
+
+Expression:
+	BoolExpression | IntExpression
+;
+
+BoolExpression:
+	value=Bool
+;
+
+IntExpression:
+	value=INT
 ;
 
 ReadVariable:
@@ -204,12 +216,12 @@ Parenthasis returns Comparison:
 ;
 
 ComparisonOp:
-	{GT} '>' |
-	{LT} '<' | 
-	{LE}'<=' |
-	{GE} '>=' | 
-	{EQ} '==' |
-	{NE} '!='
+	{GT}op= '>'  |
+	{LT}op= '<'  | 
+	{LE}op= '<=' |
+	{GE}op= '>=' | 
+	{EQ}op= '==' |
+	{NE}op= '!='
 ;
 
 Bool:

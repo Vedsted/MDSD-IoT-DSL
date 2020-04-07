@@ -1,3 +1,4 @@
+external double("int")
 external median("int")
 
 connectionConfig WifiConnection{
@@ -8,40 +9,35 @@ connectionConfig WifiConnection{
 
 connectionConfig SerialConnection {
 	type: SERIAL
-	'baudrate': '97000'
-	'stopbit': 'din far!'
+	'baudrate': '115200'
+	'stopbit': '1'
 } 
 
 iot device LightSensingDevice {
 	connect to Controller on '192.168.0.1' using SerialConnection
-	 
-	list luxValues
+	
+	
 	var lux
-
+	
+	
 	every 1 SECONDS {
-		// This 
-//    	read from LIGHTSENSOR -> to lux 
-//    	if lux AND lux OR 5 == true {
-//    		read var lux -> send to Controller 
-//    	}
-		clear luxValues
-		LED OFF
+		double of lux -> to lux
+		read from LIGHTSENSOR -> to lux
+		if (lux > 500) {
+			LED OFF		
+		} else {
+			LED ON
+		}
     	
     	/* OR  ('it' is the key word for the output value of the previous read-expression)
     	*	read from LIGHTSENSOR -> it < 50 -> send to Controller
     	*/
 	} 
-	
-	every 30 SECONDS {
-		read var lux -> send to Controller
-		read from LIGHTSENSOR -> to lux
-		read from TEMPERATURE-> add to luxValues
-	}
 }
 
 
 controller device Controller {
-	connect to LightSensingDevice on '192.168.0.2' using WifiConnection
+	connect to LightSensingDevice on 'COM7' using SerialConnection
 
 	list rawLuxValues 
 	list medainLuxValues

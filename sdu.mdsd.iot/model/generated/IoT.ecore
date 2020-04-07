@@ -60,6 +60,14 @@
   <eClassifiers xsi:type="ecore:EClass" name="Command"/>
   <eClassifiers xsi:type="ecore:EClass" name="Action" eSuperTypes="#//Command"/>
   <eClassifiers xsi:type="ecore:EClass" name="ExpressionLeft"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Expression" eSuperTypes="#//ExpressionLeft"/>
+  <eClassifiers xsi:type="ecore:EClass" name="BoolExpression" eSuperTypes="#//Expression">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" eType="#//Bool"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="IntExpression" eSuperTypes="#//Expression">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ReadVariable" eSuperTypes="#//ExpressionLeft">
     <eStructuralFeatures xsi:type="ecore:EReference" name="value" eType="#//Variable"/>
   </eClassifiers>
@@ -81,7 +89,9 @@
         eType="#//Command" containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Comparison"/>
-  <eClassifiers xsi:type="ecore:EClass" name="ComparisonOp"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ComparisonOp">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="op" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Bool"/>
   <eClassifiers xsi:type="ecore:EClass" name="DeviceConfig" eSuperTypes="#//Config"/>
   <eClassifiers xsi:type="ecore:EClass" name="ConnectionConfig" eSuperTypes="#//Config">
@@ -90,7 +100,10 @@
   <eClassifiers xsi:type="ecore:EClass" name="IpAddress" eSuperTypes="#//Address"/>
   <eClassifiers xsi:type="ecore:EClass" name="WindowsSerialAddress" eSuperTypes="#//Address"/>
   <eClassifiers xsi:type="ecore:EClass" name="UnixSerialAddress" eSuperTypes="#//Address"/>
-  <eClassifiers xsi:type="ecore:EClass" name="Variable" eSuperTypes="#//VarOrList"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Variable" eSuperTypes="#//VarOrList">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" eType="#//Expression"
+        containment="true"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="PyList" eSuperTypes="#//VarOrList"/>
   <eClassifiers xsi:type="ecore:EClass" name="MILLISECONDS" eSuperTypes="#//TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="SECONDS" eSuperTypes="#//TIMEUNIT"/>

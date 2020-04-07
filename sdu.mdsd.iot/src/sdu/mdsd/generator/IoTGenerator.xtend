@@ -26,21 +26,27 @@ import sdu.mdsd.services.IoTGrammarAccess.SendCommandElements
  */
 class IoTGenerator extends AbstractGenerator {
 
-	private Device currentDevice;
+	Device currentDevice;
+	Resource _resource
 
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
-		var model = resource.allContents.filter(Model).toList
-
-		var dev = resource.allContents.filter(IoTDevice).toList.get(0)
-		System.out.println(dev.covDevice)
-//		fsa.generateFile('greetings.txt', 'People to greet: ' + 
-//			resource.allContents
-//				.filter(Greeting)
-//				.map[name]
-//				.join(', '))
+		//var model = resource.allContents.filter(Model).toList
+		_resource = resource
+		for (dev : resource.allContents.filter(Device).toList){
+		
+		fsa.generateFile('''«dev.name»/main.py''', dev.convDevice)
+		}
+	}
+	
+	def containsLedAction(Resource resource){
+		resource.allContents.filter(LEDAction).size > 0
+	}
+	
+	def getExternalOf(Device device){
+		device.eAllContents.filter(ExternalOf).toList 
 	}
 
-	def dispatch covDevice(IoTDevice device) {
+	def dispatch convDevice(IoTDevice device) {
 		currentDevice = device;
 		var loopTexts = new ArrayList<CharSequence>();
 		for (var i = 0; i < device.program.loops.length; i++) {
@@ -57,6 +63,13 @@ class IoTGenerator extends AbstractGenerator {
 			from network import WLAN
 			from LTR329ALS01 import LTR329ALS01
 			
+			«IF (getExternalOf(device).length > 0)»
+			from externals import «FOR modules : getExternalOf(device) SEPARATOR(',')» «modules.method.name» «ENDFOR»
+			«ENDIF»
+			
+			«IF (containsLedAction(_resource))» 
+			pycom.heartbeat(False)
+			«ENDIF»
 			
 			
 			«FOR connectionStatement : device.program.connectStatements»
@@ -112,9 +125,17 @@ class IoTGenerator extends AbstractGenerator {
 
 	def convToPy(VarOrList vl) {
 		switch vl {
-			Variable: '''«vl.name» = None'''
+			Variable: '''«vl.name»  = «vl.value !== null ? vl.value.convVariableValue : "None" »'''
 			PyList: '''«vl.name» = []'''
 		}
+	}
+	
+	def String convVariableValue(Expression exp){
+		switch exp{
+			BoolExpression: exp.value instanceof True ? "True" : "False"
+			IntExpression: exp.value+""
+		}
+		
 	}
 
 	def CharSequence convLoop(Loop loop, int i) {
@@ -132,6 +153,8 @@ class IoTGenerator extends AbstractGenerator {
 			
 		'''
 	}
+	
+	
 
 	def convertTime(TIMEUNIT timeunit, int timevalue) {
 		switch timeunit {
@@ -144,7 +167,7 @@ class IoTGenerator extends AbstractGenerator {
 		}
 	}
 
-	def convCMD(Command cmd) {
+	def CharSequence convCMD(Command cmd) {
 
 		switch cmd {
 			ClearListAction: '''«cmd.list.name» = []'''
@@ -165,16 +188,47 @@ class IoTGenerator extends AbstractGenerator {
 					
 						
 				'''
+			
+			}			
+			IfStatement: {
+			'''
+			if («cmd.condition.convComparison»):
+				«FOR content : cmd.commands»
+				«content.convCMD»
+				«ENDFOR»
+			«IF (cmd.elseBlock !== null)»
+			else:
+				«FOR line : cmd.elseBlock.commands»
+				«line.convCMD»
+				«ENDFOR»
+			«ENDIF»
+			'''
 			}
 		}
 	}
 
+	def CharSequence convComparison(Comparison comp){
+		switch comp{
+			AND:'''«comp.left.convComparison» and «comp.right.convComparison»'''
+			EQL:'''«comp.left.convComparison» «comp.op.op» «comp.right.convComparison»'''
+			ItemBool:'''«comp.value»'''
+			ItemInt:'''«comp.value»'''
+			ItemVariable:'''«comp.value.name»'''
+			OR:'''«comp.left.convComparison» or «comp.right.convComparison»'''
+		}
+		
+	}
+	
 	def convExpRight(ExpressionRight right) {
 		switch (right) {
 			SendCommand:
 				right.target.sendToDevice
 			AddToList: '''«right.list.name».append(value)'''
-			ToVar: '''«right.variable.name» = value'''
+			ToVar: 
+			'''
+			global «right.variable.name»
+			«right.variable.name» = value
+			'''
 		}
 	}
 
@@ -202,7 +256,9 @@ class IoTGenerator extends AbstractGenerator {
 			ReadConnection: {
 				left.source.readFromDevice
 			}
-			ExternalOf: '''return externals.«left.method.name»(«left.target»)'''
+			ExternalOf: '''return «left.method.name»(«left.target.name»)'''
+			BoolExpression: '''return «left.convVariableValue»'''
+			IntExpression: '''return «left.convVariableValue»'''
 		}
 	}
 
@@ -224,7 +280,8 @@ class IoTGenerator extends AbstractGenerator {
 	def getGetReadSensorCode(SENSOR sensor) {
 		switch (sensor) {
 			LIGHTSENSOR: '''
-				lux = lightsensor.light()
+				luxTuple = lightsensor.light()
+				lux = (luxTuple[0]+luxTuple[1])/2
 				return lux
 			'''
 			TEMPERATURE: '''
@@ -234,20 +291,20 @@ class IoTGenerator extends AbstractGenerator {
 		}
 	}
 
-	def dispatch covDevice(ControllerDevice device) {
+	def dispatch convDevice(ControllerDevice device) {
 		'''
 			import serial
 			import time
 			
-			
-			
-			
-			
-			
 			# Initializer
-			pycom.heartbeat(False)
-			uart = UART(0)                               # init with given bus
-			uart.init(115200, bits=8, parity=None, stop=1) # init with given parameters:  Baudrate=9600
+			
+			«IF (getExternalOf(device).length > 0)»
+			from externals import «FOR modules : getExternalOf(device) SEPARATOR(',')» «modules.method.name» «ENDFOR»
+			«ENDIF»
+			
+			«FOR connectionStatement : device.program.connectStatements»
+			«connectionStatement.convConfigurationController»
+			«ENDFOR»
 			
 			while True:
 				# Receive serial communication
@@ -264,8 +321,10 @@ class IoTGenerator extends AbstractGenerator {
 						pycom.rgbled(0x00)
 		'''
 	}
+	
 
-	def convConfigurationIoT(ConnectionConfig configuration) {
+
+	def String convConfigurationIoT(ConnectionConfig configuration) {
 		switch configuration.type {
 			case 'WLAN': {
 				val map = getWlanIotValues(configuration.declarations)
@@ -295,12 +354,47 @@ class IoTGenerator extends AbstractGenerator {
 			}
 		}
 	}
+	
+	def String convConfigurationController(ConnectStatement statement){
+		var map = getSerialControllerValues(statement.configuration.declarations)
+		switch statement.configuration.type {
+			case 'SERIAL':{
+				'''
+				serialConfig= serial.Serial(
+				    port='«statement.address.value»',
+				    baudrate=«map.get('baudrate')»,
+				    parity=«map.get('parity')»,
+				    stopbits=«map.get('stopbit')»,
+				    bytesize=«map.get('bytesize')»
+				)
+				'''
+			}
+			default:{
+				''''''
+			}
+		}
+	}
 
 	def extractDeclaration(List<Declaration> declarations, String _key) {
 		val d = declarations.filter[key == _key]
 		d.length > 0 ? d.get(0) : null
 	}
 
+	def getSerialControllerValues(List<Declaration> declarations){
+		val baudrate = declarations.extractDeclaration('baudrate')?.value
+		val stopbit = declarations.extractDeclaration('stopbit')?.value
+		val bytesize = declarations.extractDeclaration('bytesize')?.value
+		val parity = declarations.extractDeclaration('parity')?.value
+
+		var map = new HashMap<String, String>()
+		// Serial
+		map.put('baudrate', baudrate ?: '115200')
+		map.put('stopbit', stopbit ?: '1')
+		map.put('bytesize', bytesize ?: '8')
+		map.put('parity', parity ?: 'None')
+		map
+	}
+	
 	def getSerialIotValues(List<Declaration> declarations) {
 		val baudrate = declarations.extractDeclaration('baudrate')?.value
 		val stopbit = declarations.extractDeclaration('stopbit')?.value
