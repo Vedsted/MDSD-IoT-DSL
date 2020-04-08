@@ -18,6 +18,7 @@ import sdu.mdsd.ioT.SENSOR
 import java.util.UUID
 import sdu.mdsd.ioT.Device
 import sdu.mdsd.services.IoTGrammarAccess.SendCommandElements
+import java.util.Map
 
 /**
  * Generates code from your model files on save.
@@ -30,20 +31,20 @@ class IoTGenerator extends AbstractGenerator {
 	Resource _resource
 
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
-		//var model = resource.allContents.filter(Model).toList
+		// var model = resource.allContents.filter(Model).toList
 		_resource = resource
-		for (dev : resource.allContents.filter(Device).toList){
-		
-		fsa.generateFile('''«dev.name»/main.py''', dev.convDevice)
+		for (dev : resource.allContents.filter(Device).toList) {
+
+			fsa.generateFile('''«dev.name»/main.py''', dev.convDevice)
 		}
 	}
-	
-	def containsLedAction(Resource resource){
+
+	def containsLedAction(Resource resource) {
 		resource.allContents.filter(LEDAction).size > 0
 	}
-	
-	def getExternalOf(Device device){
-		device.eAllContents.filter(ExternalOf).toList 
+
+	def getExternalOf(Device device) {
+		device.eAllContents.filter(ExternalOf).toList
 	}
 
 	def dispatch convDevice(IoTDevice device) {
@@ -64,16 +65,15 @@ class IoTGenerator extends AbstractGenerator {
 			from LTR329ALS01 import LTR329ALS01
 			
 			«IF (getExternalOf(device).length > 0)»
-			from externals import «FOR modules : getExternalOf(device) SEPARATOR(',')» «modules.method.name» «ENDFOR»
+				from externals import«FOR modules : getExternalOf(device) SEPARATOR(',')» «modules.method.name»«ENDFOR»
 			«ENDIF»
 			
 			«IF (containsLedAction(_resource))» 
-			pycom.heartbeat(False)
+				pycom.heartbeat(False)
 			«ENDIF»
 			
-			
 			«FOR connectionStatement : device.program.connectStatements»
-				«connectionStatement.configuration.convConfigurationIoT»	
+				«connectionStatement.convConfigurationIoT»	
 				
 			«ENDFOR»
 			
@@ -93,9 +93,6 @@ class IoTGenerator extends AbstractGenerator {
 			«FOR t : loopTexts»
 				«t»
 			«ENDFOR»
-			
-			 
-			
 		'''
 		currentDevice = null;
 		return string
@@ -125,21 +122,21 @@ class IoTGenerator extends AbstractGenerator {
 
 	def convToPy(VarOrList vl) {
 		switch vl {
-			Variable: '''«vl.name»  = «vl.value !== null ? vl.value.convVariableValue : "None" »'''
+			Variable: '''«vl.name»  = «vl.value !== null ? vl.value.convVariableValue : "None"»'''
 			PyList: '''«vl.name» = []'''
 		}
 	}
-	
-	def String convVariableValue(Expression exp){
-		switch exp{
+
+	def String convVariableValue(Expression exp) {
+		switch exp {
 			BoolExpression: exp.value instanceof True ? "True" : "False"
-			IntExpression: exp.value+""
+			IntExpression: exp.value + ""
 		}
-		
+
 	}
 
 	def CharSequence convLoop(Loop loop, int i) {
- 		val seconds = convertTime(loop.timeUnit, loop.timeVal)
+		val seconds = convertTime(loop.timeUnit, loop.timeVal)
 
 		return '''
 			def loop«i»():
@@ -147,14 +144,10 @@ class IoTGenerator extends AbstractGenerator {
 					«cmd.convCMD()»
 				«ENDFOR»
 			
-			
-			
 			_thread.start_new_thread(th_func, («seconds», loop«i»))
 			
 		'''
 	}
-	
-	
 
 	def convertTime(TIMEUNIT timeunit, int timevalue) {
 		switch timeunit {
@@ -179,55 +172,53 @@ class IoTGenerator extends AbstractGenerator {
 					def expLeft«uuid»():
 						«cmd.left.convExpLeft»
 					
+					
 					def expRight«uuid»(value):
 						«cmd.right.convExpRight»
 					
 					
 					result = expLeft«uuid»()
 					expRight«uuid»(result)
-					
-						
 				'''
-			
-			}			
+
+			}
 			IfStatement: {
-			'''
-			if («cmd.condition.convComparison»):
-				«FOR content : cmd.commands»
-				«content.convCMD»
-				«ENDFOR»
-			«IF (cmd.elseBlock !== null)»
-			else:
-				«FOR line : cmd.elseBlock.commands»
-				«line.convCMD»
-				«ENDFOR»
-			«ENDIF»
-			'''
+				'''
+					if («cmd.condition.convComparison»):
+						«FOR content : cmd.commands»
+							«content.convCMD»
+						«ENDFOR»
+					«IF (cmd.elseBlock !== null)»
+						else:
+							«FOR line : cmd.elseBlock.commands»
+								«line.convCMD»
+							«ENDFOR»
+					«ENDIF»
+				'''
 			}
 		}
 	}
 
-	def CharSequence convComparison(Comparison comp){
-		switch comp{
-			AND:'''«comp.left.convComparison» and «comp.right.convComparison»'''
-			EQL:'''«comp.left.convComparison» «comp.op.op» «comp.right.convComparison»'''
-			ItemBool:'''«comp.value»'''
-			ItemInt:'''«comp.value»'''
-			ItemVariable:'''«comp.value.name»'''
-			OR:'''«comp.left.convComparison» or «comp.right.convComparison»'''
+	def CharSequence convComparison(Comparison comp) {
+		switch comp {
+			AND: '''«comp.left.convComparison» and «comp.right.convComparison»'''
+			EQL: '''«comp.left.convComparison» «comp.op.op» «comp.right.convComparison»'''
+			ItemBool: '''«comp.value»'''
+			ItemInt: '''«comp.value»'''
+			ItemVariable: '''«comp.value.name»'''
+			OR: '''«comp.left.convComparison» or «comp.right.convComparison»'''
 		}
-		
+
 	}
-	
+
 	def convExpRight(ExpressionRight right) {
 		switch (right) {
 			SendCommand:
 				right.target.sendToDevice
 			AddToList: '''«right.list.name».append(value)'''
-			ToVar: 
-			'''
-			global «right.variable.name»
-			«right.variable.name» = value
+			ToVar: '''
+				global «right.variable.name»
+				«right.variable.name» = value
 			'''
 		}
 	}
@@ -235,16 +226,28 @@ class IoTGenerator extends AbstractGenerator {
 	def getSendToDevice(Device targetDevice) {
 
 		var connectionList = this.currentDevice.program.connectStatements.filter([device == targetDevice]).toList
-		var connection = connectionList.length > 0
-				? connectionList.get(0)
-				: throw new Exception("A connection to the device not found")
-				
-		if (connection.configuration.type == "WLAN") {
-			return '''socket.send(value)'''
-		} else if (connection.configuration.type == "SERIAL") {
-			return '''uart.send(value)'''
-		} else {
-			throw new Exception("Connect config not found")
+		var connection = connectionList.length > 0 ? connectionList.get(0) : throw new Exception(
+				"A connection to the device not found")
+
+		switch (currentDevice) {
+			IoTDevice: {
+				if (connection.configuration.type == "WLAN") {
+					return '''socket.send(value)'''
+				} else if (connection.configuration.type == "SERIAL") {
+					return '''print(value)''' // print sends a value over serial USB connection on PyCom devices.
+				} else {
+					throw new Exception("Connect config not found")
+				}
+			}
+			ControllerDevice: {
+				if (connection.configuration.type == "WLAN") {
+					return '''socket.send(value)'''
+				} else if (connection.configuration.type == "SERIAL") {
+					return '''serial«targetDevice.name».write(str(value) + "\n")'''
+				} else {
+					throw new Exception("Connect config not found")
+				}
+			}
 		}
 	}
 
@@ -264,16 +267,27 @@ class IoTGenerator extends AbstractGenerator {
 
 	def CharSequence readFromDevice(Device sourceDevice) {
 		var connectionList = this.currentDevice.program.connectStatements.filter([device == sourceDevice]).toList
-		var connection = connectionList.length > 0
-				? connectionList.get(0)
-				: throw new Exception("A connection to the device not found")
-
-		if (connection.configuration.type == "WLAN") {
-			return '''return socket.recv(1024)'''
-		} else if (connection.configuration.type == "SERIAL") {
-			return '''return uart.readall()'''
-		} else {
-			throw new Exception("Connect config not found")
+		var connection = connectionList.length > 0 ? connectionList.get(0) : throw new Exception(
+				"A connection to the device not found")
+		switch (currentDevice) {
+			IoTDevice: {
+				if (connection.configuration.type == "WLAN") {
+					return '''return socket.recv(1024)'''
+				} else if (connection.configuration.type == "SERIAL") {
+					return '''return uart.readall()'''
+				} else {
+					throw new Exception("Connect config not found")
+				}
+			}
+			ControllerDevice: {
+				if (connection.configuration.type == "WLAN") {
+					return '''return socket.recv(1024)'''
+				} else if (connection.configuration.type == "SERIAL") {
+					return '''return serial«sourceDevice.name».readline()'''
+				} else {
+					throw new Exception("Connect config not found")
+				}
+			}
 		}
 	}
 
@@ -292,39 +306,51 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def dispatch convDevice(ControllerDevice device) {
-		'''
+		currentDevice = device;
+		var loopTexts = new ArrayList<CharSequence>();
+		for (var i = 0; i < device.program.loops.length; i++) {
+			val text = device.program.loops.get(i).convLoop(i);
+			loopTexts.add(text)
+		}
+		var string = '''
 			import serial
 			import time
+			import _thread
+			
 			
 			# Initializer
 			
 			«IF (getExternalOf(device).length > 0)»
-			from externals import «FOR modules : getExternalOf(device) SEPARATOR(',')» «modules.method.name» «ENDFOR»
+				from externals import «FOR modules : getExternalOf(device) SEPARATOR(',')» «modules.method.name» «ENDFOR»
 			«ENDIF»
 			
 			«FOR connectionStatement : device.program.connectStatements»
-			«connectionStatement.convConfigurationController»
+				«connectionStatement.convConfigurationController»
 			«ENDFOR»
 			
+			«FOR v : device.program.variables»
+				«v.convToPy»
+			«ENDFOR»
+			
+			def th_func(delay, action):
+				while True:
+					time.sleep(delay)
+					action()
+						
+			«FOR t : loopTexts»
+				«t»
+			«ENDFOR»
+			
+			# Do nothing forever, because the thread(s) started above would exit if this (main) thread exits.
 			while True:
-				# Receive serial communication
-				myBytes = uart.read(1) # Read the received bytes into the byte array
-			
-				# Parse the serial communication
-				if myBytes != None:
-					command = myBytes[0]
-			
-					# React to the parsed message
-					if command == 0:
-						pycom.rgbled(0xffffff)
-					elif command == 1:
-						pycom.rgbled(0x00)
+				time.sleep(100)
 		'''
+		currentDevice = null;
+		return string
 	}
-	
 
-
-	def String convConfigurationIoT(ConnectionConfig configuration) {
+	def String convConfigurationIoT(ConnectStatement statement) {
+		var configuration = statement.configuration
 		switch configuration.type {
 			case 'WLAN': {
 				val map = getWlanIotValues(configuration.declarations)
@@ -348,28 +374,28 @@ class IoTGenerator extends AbstractGenerator {
 			case 'SERIAL': {
 				var map = getSerialIotValues(configuration.declarations)
 				'''
-					uart = UART(«map.get('bus')»)
+					uart = UART(«statement.address.value»)
 					uart.init(«map.get('baudrate')», bits=«map.get('bits')», parity=«map.get('parity')», stop=«map.get('stopbit')»)
 				'''
 			}
 		}
 	}
-	
-	def String convConfigurationController(ConnectStatement statement){
+
+	def String convConfigurationController(ConnectStatement statement) {
 		var map = getSerialControllerValues(statement.configuration.declarations)
 		switch statement.configuration.type {
-			case 'SERIAL':{
+			case 'SERIAL': {
 				'''
-				serialConfig= serial.Serial(
-				    port='«statement.address.value»',
-				    baudrate=«map.get('baudrate')»,
-				    parity=«map.get('parity')»,
-				    stopbits=«map.get('stopbit')»,
-				    bytesize=«map.get('bytesize')»
-				)
+					serial«statement.device.name»= serial.Serial(
+					    port='«statement.address.value»',
+					    baudrate=«map.get('baudrate')»,
+					    parity=«map.get('parity')»,
+					    stopbits=«map.get('stopbit')»,
+					    bytesize=«map.get('bytesize')»
+					)
 				'''
 			}
-			default:{
+			default: {
 				''''''
 			}
 		}
@@ -380,21 +406,35 @@ class IoTGenerator extends AbstractGenerator {
 		d.length > 0 ? d.get(0) : null
 	}
 
-	def getSerialControllerValues(List<Declaration> declarations){
+	def getSerialControllerValues(List<Declaration> declarations) {
 		val baudrate = declarations.extractDeclaration('baudrate')?.value
 		val stopbit = declarations.extractDeclaration('stopbit')?.value
 		val bytesize = declarations.extractDeclaration('bytesize')?.value
 		val parity = declarations.extractDeclaration('parity')?.value
+		val convertedParity = parity.convertParityToPy
 
 		var map = new HashMap<String, String>()
 		// Serial
 		map.put('baudrate', baudrate ?: '115200')
 		map.put('stopbit', stopbit ?: '1')
 		map.put('bytesize', bytesize ?: '8')
-		map.put('parity', parity ?: 'None')
+		map.put('parity', convertedParity ?: 'serial.PARITY_NONE')
 		map
 	}
 	
+	def String convertParityToPy(String parity) {
+		
+		switch(parity){
+			case '0', case 'None':  'serial.PARITY_NONE'
+			case 'even' : "serial.PARITY_EVEN"
+			case "odd": "serial.PARITY_ODD"
+			case "mark" :  "serial.PARITY_MARK"
+			case "space": "serial.PARITY_SPACE"
+			default: null
+			
+		}
+	}
+
 	def getSerialIotValues(List<Declaration> declarations) {
 		val baudrate = declarations.extractDeclaration('baudrate')?.value
 		val stopbit = declarations.extractDeclaration('stopbit')?.value
@@ -408,7 +448,6 @@ class IoTGenerator extends AbstractGenerator {
 		map.put('stopbit', stopbit ?: '1')
 		map.put('bits', bits ?: '8')
 		map.put('parity', parity ?: 'None')
-		map.put('bus', bus ?: '0')
 		map
 	}
 

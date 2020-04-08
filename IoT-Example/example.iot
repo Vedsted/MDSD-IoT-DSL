@@ -1,11 +1,6 @@
 external double("int")
 external median("int")
-
-connectionConfig WifiConnection{
-	type: WLAN
-	"ssid": "eduroam"
-	"password": "Passw0rd!"
-}
+external log("int")
 
 connectionConfig SerialConnection {
 	type: SERIAL
@@ -13,15 +8,25 @@ connectionConfig SerialConnection {
 	'stopbit': '1'
 } 
 
+
+connectionConfig Wifi {
+	type: WLAN
+	'ssid': "Network2GHz"
+	'password': 'kalenderlys'
+} 
+
+connectionConfig Wifi2 {
+	type: WLAN
+	'ssid': "Eduroam"
+	'password': 'passW0rd!'
+} 
+
 iot device LightSensingDevice {
-	connect to Controller on '192.168.0.1' using SerialConnection
-	
+	connect to Controller on '192.168.0.13:8000' using Wifi
 	
 	var lux
-	
-	
+		
 	every 1 SECONDS {
-		double of lux -> to lux
 		read from LIGHTSENSOR -> to lux
 		if (lux > 500) {
 			LED OFF		
@@ -29,25 +34,41 @@ iot device LightSensingDevice {
 			LED ON
 		}
     	
-    	/* OR  ('it' is the key word for the output value of the previous read-expression)
-    	*	read from LIGHTSENSOR -> it < 50 -> send to Controller
-    	*/
+    	read var lux -> send to Controller
 	} 
 }
 
 
 controller device Controller {
-	connect to LightSensingDevice on 'COM7' using SerialConnection
-
-	list rawLuxValues 
-	list medainLuxValues
-
+	
+	// TODO det er super redundant at skrive både device navn og IP.
+	// Flexibilitet vs bekvemmelighed
+	// Alternativer:
+		// - Brug kun IP
+		// - Brug kun navn (og så skal Cloud kende sin egen IP)
+	connect to Cloud on "1929283591" using Wifi
+	
+	var readLux 
+	var NIL
+	
 	always {
-    	read from LightSensingDevice -> add to rawLuxValues
+    	read from Wifi -> to readLux
+    	log of readLux -> to NIL
+    	read from readLux -> send to Cloud
 	}
 
-	every 20 MINUTES {
-		median of rawLuxValues -> add to medainLuxValues
-     	clear rawLuxValues
+
+}
+
+controller device Cloud {
+	
+	// TODO make server listen.
+	listen on 80 using Wifi2 -> print(input)
+	
+	//listen on 8080 using Wifi2 -> print(input+"!!!!")
+	
+	every 1 SECONDS{
+		read from Http -> save in file
+		read from MyConnection -> print(value)
 	}
 }
