@@ -182,7 +182,10 @@ class IoTGenerator extends AbstractGenerator {
 	def CharSequence convCMD(Command cmd) {
 
 		switch cmd {
-			ClearListAction: '''«cmd.list.name» = []'''
+			ClearListAction: '''
+				global «cmd.list.name»
+				«cmd.list.name» = []
+				'''
 			LEDAction: '''pycom.rgbled(«cmd.state == 'ON' ? '0xFFFFFF':'0x000000'»)'''
 			ArrowCommand: {
 
@@ -288,7 +291,7 @@ class IoTGenerator extends AbstractGenerator {
 			ReadConnection: {
 				left.source.readFromDevice
 			}
-			ExternalOf: '''return «left.method.name»(«left.target.name»)'''
+			ExternalOf: '''return externals.«left.method.name»(«left.target.name»)'''
 			BoolExpression: '''return «left.convVariableValue»'''
 			IntExpression: '''return «left.convVariableValue»'''
 		}
@@ -409,7 +412,7 @@ class IoTGenerator extends AbstractGenerator {
 				            if data:
 				                value = str(data) # read data
 				                value = value[2:-1] # remove b'...'
-				                
+				               	
 				                «listenStatements.get(0).body.convExpRight»
 					                
 				_thread.start_new_thread(th_func, (0, run_server))
