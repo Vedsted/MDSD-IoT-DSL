@@ -1,28 +1,24 @@
 external double("int")
 external median("int")
 external log("int")
+external processing("string")
 
-connectionConfig SerialConnection {
+connectionConfig CombinedSerialConfig {
 	type: SERIAL
 	'baudrate': '115200'
 	'stopbit': '1'
-} 
-
+}  
 
 connectionConfig Wifi {
 	type: WLAN
-	'ssid': "Network2GHz"
-	'password': 'kalenderlys'
-} 
-
-connectionConfig Wifi2 {
-	type: WLAN
-	'ssid': "Eduroam"
-	'password': 'passW0rd!'
-} 
+	'ssid': "CableBox-9655-2_4Ghz"
+	'password': 'connectnow20'
+}
 
 iot device LightSensingDevice {
-	connect to Controller on '192.168.0.13:8000' using Wifi
+		
+	setup Wifi
+	connect to SerialController on '0' using CombinedSerialConfig
 	
 	var lux
 		
@@ -34,41 +30,33 @@ iot device LightSensingDevice {
 			LED ON
 		}
     	
-    	read var lux -> send to Controller
-	} 
+    	read var lux -> send to WifiController
+    	
+    	read var lux -> send to SerialController
+	}
 }
 
 
-controller device Controller {
+controller device SerialController {
+	connect to LightSensingDevice on '/dev/ttyACM0' using CombinedSerialConfig
 	
-	// TODO det er super redundant at skrive både device navn og IP.
-	// Flexibilitet vs bekvemmelighed
-	// Alternativer:
-		// - Brug kun IP
-		// - Brug kun navn (og så skal Cloud kende sin egen IP)
-	connect to Cloud on "1929283591" using Wifi
-	
-	var readLux 
+	var readLux
 	var NIL
 	
 	always {
-    	read from Wifi -> to readLux
+    	read from LightSensingDevice -> to readLux
     	log of readLux -> to NIL
-    	read from readLux -> send to Cloud
+    	read var readLux -> send to Cloud
 	}
+}
 
-
+controller device WifiController {
+	listen on 192.168.0.3:21531 -> log of value
 }
 
 controller device Cloud {
 	
 	// TODO make server listen.
-	listen on 80 using Wifi2 -> print(input)
+	listen on 192.168.0.10:80 -> processing of value
 	
-	//listen on 8080 using Wifi2 -> print(input+"!!!!")
-	
-	every 1 SECONDS{
-		read from Http -> save in file
-		read from MyConnection -> print(value)
-	}
 }

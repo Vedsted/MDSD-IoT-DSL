@@ -9,7 +9,7 @@ Model:
 ;
 
 
-terminal IP returns ecore::EString: INT'.'INT'.'INT'.'INT;
+terminal IP returns ecore::EString: INT'.'INT'.'INT'.'INT; // IP
 terminal WINDOWS_SERIAL returns ecore::EString: 'COM'INT;
 
 ExternalDeclaration:
@@ -65,9 +65,19 @@ IoTDevice:
 ;
 
 Program:
+	(wifiStatements=WifiStatement)?
 	connectStatements+=ConnectStatement*
 	variables+=VarOrList*
-	loops+=Loop+
+	listenStatements+=ListenStatement*
+	loops+=Loop*
+;
+
+ListenStatement:
+	'listen' 'on' ip=IP ':' port=INT '->' body=ExpressionRight
+;
+
+WifiStatement:
+	'setup' connectionConfig=[ConnectionConfig]
 ;
 
 ConnectStatement:
@@ -162,9 +172,12 @@ SENSOR:
 ;
 
 
-
 ExpressionRight:
-	SendCommand | AddToList | ToVar
+	SendCommand | AddToList | ToVar | ExternalRight | Block
+;
+
+Block:
+	'{' commands+=Command+ '}'
 ;
 
 ToVar returns ExpressionRight:
@@ -173,6 +186,10 @@ ToVar returns ExpressionRight:
 
 AddToList returns ExpressionRight:
 	{AddToList} 'add' 'to' list=[PyList]
+;
+
+ExternalRight:
+	method=[ExternalDeclaration] 'of' 'value'
 ;
 
 SendCommand returns ExpressionRight:

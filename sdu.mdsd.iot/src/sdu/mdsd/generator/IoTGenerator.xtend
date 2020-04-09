@@ -43,8 +43,11 @@ class IoTGenerator extends AbstractGenerator {
 		resource.allContents.filter(LEDAction).size > 0
 	}
 
-	def getExternalOf(Device device) {
-		device.eAllContents.filter(ExternalOf).toList
+	def getExternals(Device device) {
+		var names = device.eAllContents.filter(ExternalOf).map(e | e.method.name).toSet
+		names.addAll(device.eAllContents.filter(ExternalRight).map(e | e.method.name).toSet)
+		
+		return names
 	}
 
 	def dispatch convDevice(IoTDevice device) {
@@ -55,26 +58,42 @@ class IoTGenerator extends AbstractGenerator {
 			loopTexts.add(text)
 		}
 		var sensorInits = device.eResource.allContents.filter(SENSOR).map[convertSensorInitCode].toList
+		
+		// Used to detect which device to send commands to
+		var sendToCommands = device.eAllContents.filter(SendCommand).toSet
 
 		var string = '''
 			import pycom
 			import time
+			import socket
 			import _thread
-			from machine import UART,ADC, Pin
+			from machine import UART,ADC,Pin,idle
 			from network import WLAN
 			from LTR329ALS01 import LTR329ALS01
 			
-			«IF (getExternalOf(device).length > 0)»
-				from externals import«FOR modules : getExternalOf(device) SEPARATOR(',')» «modules.method.name»«ENDFOR»
+			«IF (getExternals(device).length > 0)»
+				from externals import«FOR moduleName : getExternals(device) SEPARATOR(',')» «moduleName»«ENDFOR»
 			«ENDIF»
 			
 			«IF (containsLedAction(_resource))» 
 				pycom.heartbeat(False)
 			«ENDIF»
 			
+			«IF device.program.wifiStatements !== null»
+				«device.program.wifiStatements.convWifiStatement»
+			«ENDIF»
+			
 			«FOR connectionStatement : device.program.connectStatements»
 				«connectionStatement.convConfigurationIoT»	
 				
+			«ENDFOR»
+			
+			«FOR sendToCommand : sendToCommands»
+				«IF sendToCommand.target.program.listenStatements.size > 0»
+				socket«sendToCommand.target.name» = socket.socket()
+				socket«sendToCommand.target.name».setblocking(True)
+				socket«sendToCommand.target.name».connect(('«sendToCommand.target.program.listenStatements.get(0).ip»', «sendToCommand.target.program.listenStatements.get(0).port»))
+				«ENDIF»
 			«ENDFOR»
 			
 			«FOR v : device.program.variables»
@@ -220,35 +239,45 @@ class IoTGenerator extends AbstractGenerator {
 				global «right.variable.name»
 				«right.variable.name» = value
 			'''
+			ExternalRight: '''externals.«right.method.name»(value)'''
+			Block: {
+					var commands = ""
+					for (command : right.commands) {
+						commands += command.convCMD
+					}
+					commands
+				}
+			default: throw new Exception(right.class.toString + " not implemented for ExpressionRight")
 		}
 	}
 
 	def getSendToDevice(Device targetDevice) {
 
 		var connectionList = this.currentDevice.program.connectStatements.filter([device == targetDevice]).toList
-		var connection = connectionList.length > 0 ? connectionList.get(0) : throw new Exception(
-				"A connection to the device not found")
+		var connection = connectionList.length > 0 ? connectionList.get(0) :
+			targetDevice.eAllContents.filter(ListenStatement).toList.get(0)
 
-		switch (currentDevice) {
-			IoTDevice: {
-				if (connection.configuration.type == "WLAN") {
-					return '''socket.send(value)'''
-				} else if (connection.configuration.type == "SERIAL") {
-					return '''print(value)''' // print sends a value over serial USB connection on PyCom devices.
-				} else {
-					throw new Exception("Connect config not found")
-				}
+		switch(connection) {
+			ConnectStatement: {
+				// Send over serial				
+				currentDevice.serialWrite(targetDevice)
 			}
-			ControllerDevice: {
-				if (connection.configuration.type == "WLAN") {
-					return '''socket.send(value)'''
-				} else if (connection.configuration.type == "SERIAL") {
-					return '''serial«targetDevice.name».write(str(value) + "\n")'''
-				} else {
-					throw new Exception("Connect config not found")
-				}
+			ListenStatement: {
+				// Send over wifi
+				return '''socket«targetDevice.name».send(bytes(str(value), "utf8"))'''
+			}
+			default: {
+				throw new Exception("No connection config found. Requires either 1 serial or 1 listen statement")
 			}
 		}
+	}
+	
+	def dispatch serialWrite(IoTDevice device, Device _) {
+		return '''print(value)''' // print sends a value over serial USB connection on PyCom devices.
+	}
+	
+	def dispatch serialWrite(ControllerDevice device, Device targetDevice) {
+		return '''serial«targetDevice.name».write(str(value) + "\n")'''
 	}
 
 	def convExpLeft(ExpressionLeft left) {
@@ -312,16 +341,21 @@ class IoTGenerator extends AbstractGenerator {
 			val text = device.program.loops.get(i).convLoop(i);
 			loopTexts.add(text)
 		}
+		var listenStatements = device.eAllContents.filter(ListenStatement).toList
+		
 		var string = '''
 			import serial
 			import time
+			import socket
+			import select
 			import _thread
 			
 			
 			# Initializer
 			
-			«IF (getExternalOf(device).length > 0)»
-				from externals import «FOR modules : getExternalOf(device) SEPARATOR(',')» «modules.method.name» «ENDFOR»
+			«IF (getExternals(device).length > 0)»
+				# You need to declare and implement: «FOR moduleName : getExternals(device) SEPARATOR(',')» «moduleName» «ENDFOR»
+				import externals
 			«ENDIF»
 			
 			«FOR connectionStatement : device.program.connectStatements»
@@ -341,6 +375,46 @@ class IoTGenerator extends AbstractGenerator {
 				«t»
 			«ENDFOR»
 			
+			«IF listenStatements.length > 0»
+				server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				print('Socket created')				
+				
+				# Bind socket to local host and port
+				try:
+				    server.bind(('«listenStatements.get(0).ip»', «listenStatements.get(0).port»))
+				    
+				except socket.error as msg:
+				    print('Bind failed. Error Code : ' + msg + ' Message ' + str(msg))
+				    sys.exit()
+				
+				server.listen(10)
+				input = [server, ]  # a list of all connections we want to check for data
+				# each time we call select.select()
+				
+				def run_server():
+				    inputready, outputready, exceptready = select.select(input, [], [])
+				
+				    for s in inputready:  # check each socket that select() said has available data
+				
+				        if s == server:  # if select returns our server socket, there is a new
+				                        # remote socket trying to connect
+				            client, address = server.accept()
+				            # add it to the socket list so we can check it now
+				            input.append(client)
+				            print('new client added%s' % str(address))
+				
+				        else:
+				            # select has indicated that these sockets have data available to recv
+				            data = s.recv(1024)
+				            if data:
+				                value = str(data) # read data
+				                value = value[2:-1] # remove b'...'
+				                
+				                «listenStatements.get(0).body.convExpRight»
+					                
+				_thread.start_new_thread(th_func, (0, run_server))
+			«ENDIF»
+			
 			# Do nothing forever, because the thread(s) started above would exit if this (main) thread exits.
 			while True:
 				time.sleep(100)
@@ -349,28 +423,29 @@ class IoTGenerator extends AbstractGenerator {
 		return string
 	}
 
+	def String convWifiStatement(WifiStatement statement) {
+		val map = getWlanIotValues(statement.connectionConfig.declarations)
+		'''
+			SSID = '«map.get('ssid')»'
+			KEY = '«map.get('password')»'
+			
+			wlan = WLAN(mode=WLAN.STA)
+			nets = wlan.scan()
+			for net in nets:
+				if net.ssid == SSID:
+					print('Network found!')
+					wlan.connect(net.ssid, auth=(net.sec, KEY), timeout=5000)
+					while not wlan.isconnected():
+						idle() # save power while waiting
+					print('WLAN connection succeeded!')
+					print(wlan.ifconfig()) # Print the connection settings, IP, Subnet mask, Gateway, DNS
+					break
+		'''
+	}
+
 	def String convConfigurationIoT(ConnectStatement statement) {
 		var configuration = statement.configuration
 		switch configuration.type {
-			case 'WLAN': {
-				val map = getWlanIotValues(configuration.declarations)
-				'''
-					SSID = '«map.get('ssid')»'
-					KEY = '«map.get('password')»'
-					
-					wlan = WLAN(mode=WLAN.STA)
-					nets = wlan.scan()
-					for net in nets:
-						if net.ssid == SSID:
-							print('Network found!')
-							wlan.connect(net.ssid, auth=(net.sec, KEY), timeout=5000)
-							while not wlan.isconnected():
-								machine.idle() # save power while waiting
-							print('WLAN connection succeeded!')
-							print(wlan.ifconfig()) # Print the connection settings, IP, Subnet mask, Gateway, DNS
-							break
-				'''
-			}
 			case 'SERIAL': {
 				var map = getSerialIotValues(configuration.declarations)
 				'''
@@ -378,6 +453,7 @@ class IoTGenerator extends AbstractGenerator {
 					uart.init(«map.get('baudrate')», bits=«map.get('bits')», parity=«map.get('parity')», stop=«map.get('stopbit')»)
 				'''
 			}
+			default: throw new Exception(statement.class.toString +  " unexpected for method convConfigurationIoT.")
 		}
 	}
 

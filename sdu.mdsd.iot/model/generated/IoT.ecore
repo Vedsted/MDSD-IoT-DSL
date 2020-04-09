@@ -30,12 +30,25 @@
   <eClassifiers xsi:type="ecore:EClass" name="ControllerDevice" eSuperTypes="#//Device"/>
   <eClassifiers xsi:type="ecore:EClass" name="IoTDevice" eSuperTypes="#//Device"/>
   <eClassifiers xsi:type="ecore:EClass" name="Program">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="wifiStatements" eType="#//WifiStatement"
+        containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="connectStatements" upperBound="-1"
         eType="#//ConnectStatement" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="variables" upperBound="-1"
         eType="#//VarOrList" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="listenStatements" upperBound="-1"
+        eType="#//ListenStatement" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="loops" upperBound="-1"
         eType="#//Loop" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ListenStatement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="ip" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="port" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="body" eType="#//ExpressionRight"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="WifiStatement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="connectionConfig" eType="#//ConnectionConfig"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ConnectStatement">
     <eStructuralFeatures xsi:type="ecore:EReference" name="device" eType="#//Device"/>
@@ -84,6 +97,13 @@
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="SENSOR"/>
   <eClassifiers xsi:type="ecore:EClass" name="ExpressionRight"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Block" eSuperTypes="#//ExpressionRight">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="commands" upperBound="-1"
+        eType="#//Command" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ExternalRight" eSuperTypes="#//ExpressionRight">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="method" eType="#//ExternalDeclaration"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ElseBlock">
     <eStructuralFeatures xsi:type="ecore:EReference" name="commands" upperBound="-1"
         eType="#//Command" containment="true"/>
