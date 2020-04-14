@@ -1,8 +1,16 @@
+
+//type int
+//type list
+
+// Externals
 external double("int")
-external median("int")
+external median("list")
 external log("int")
 external processing("string")
+// TODO types
 
+
+// Configs
 connectionConfig CombinedSerialConfig {
 	type: SERIAL
 	'baudrate': '115200'
@@ -12,27 +20,53 @@ connectionConfig CombinedSerialConfig {
 connectionConfig Wifi {
 	type: WLAN
 	'ssid': "CableBox-9655-2_4Ghz"
-	'password': 'connectnow20'
+	'password': 'pASSw0rd!'
 }
 
+
+// IOT Device
 iot device LightSensingDevice {
-		
+	
+	// Setup
 	setup Wifi
 	connect to SerialController on '0' using CombinedSerialConfig
 	
+	
+	//variables
 	var lux
-		
-	every 1 SECONDS {
+	list mytLSIT
+	var samplingspeed = 2
+	var samplingspeed2 = 2
+	var altSpeed = 25
+	// loop
+	every 5 SECONDS {
 		read from LIGHTSENSOR -> to lux
 		if (lux > 500) {
 			LED OFF		
+    		median of  mytLSIT -> send to SerialController
+    		read var altSpeed -> to samplingspeed
 		} else {
 			LED ON
+    		median of mytLSIT -> send to SerialController
 		}
     	
     	read var lux -> send to WifiController
     	
-    	read var lux -> send to SerialController
+	}
+	
+	every 10 SECONDS {
+		read from LIGHTSENSOR -> to lux
+		if (lux > 500) {
+			LED OFF		
+    		median of  mytLSIT -> send to SerialController
+    		read var altSpeed -> to samplingspeed
+		} else {
+			LED ON
+    		median of mytLSIT -> send to SerialController
+		}
+    	
+    	read var lux -> send to WifiController
+    	
 	}
 }
 
@@ -40,13 +74,13 @@ iot device LightSensingDevice {
 controller device SerialController {
 	connect to LightSensingDevice on '/dev/ttyACM0' using CombinedSerialConfig
 	
-	var readLux
-	var NIL
+	list readLux
+
 	
 	always {
-    	read from LightSensingDevice -> to readLux
-    	log of readLux -> to NIL
-    	read var readLux -> send to Cloud
+    	read from LightSensingDevice ->add to readLux
+    	median of readLux -> log of value
+    	median of readLux -> send to Cloud
 	}
 }
 
@@ -57,7 +91,7 @@ controller device WifiController {
 	listen on 192.168.0.3:21531 -> add to myValues
 	
 	every 5 SECONDS {
-		log of myValues -> to NIL
+		median of myValues -> send to Cloud
 	}
 	
 	every 10 SECONDS {
@@ -67,7 +101,7 @@ controller device WifiController {
 
 controller device Cloud {
 	
-	// TODO make server listen.
+	
 	listen on 192.168.0.10:80 -> processing of value
 	
 }
