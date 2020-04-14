@@ -63,7 +63,8 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Loop">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="timeVal" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="timeVal" eType="#//Expression"
+        containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="timeUnit" eType="#//TIMEUNIT"
         containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="command" upperBound="-1"
@@ -142,6 +143,9 @@
         containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="right" eType="#//ExpressionRight"
         containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="VarAccess" eSuperTypes="#//Expression">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="variableName" eType="#//VarOrList"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="LIGHTSENSOR" eSuperTypes="#//SENSOR"/>
   <eClassifiers xsi:type="ecore:EClass" name="TEMPERATURE" eSuperTypes="#//SENSOR"/>

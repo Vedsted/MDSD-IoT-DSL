@@ -19,6 +19,7 @@ import java.util.UUID
 import sdu.mdsd.ioT.Device
 import sdu.mdsd.services.IoTGrammarAccess.SendCommandElements
 import java.util.Map
+import sdu.mdsd.ioT.Loop
 
 /**
  * Generates code from your model files on save.
@@ -44,9 +45,9 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def getExternals(Device device) {
-		var names = device.eAllContents.filter(ExternalOf).map(e | e.method.name).toSet
-		names.addAll(device.eAllContents.filter(ExternalRight).map(e | e.method.name).toSet)
-		
+		var names = device.eAllContents.filter(ExternalOf).map(e|e.method.name).toSet
+		names.addAll(device.eAllContents.filter(ExternalRight).map(e|e.method.name).toSet)
+
 		return names
 	}
 
@@ -57,10 +58,10 @@ class IoTGenerator extends AbstractGenerator {
 			val text = device.program.loops.get(i).convLoop(i);
 			loopTexts.add(text)
 		}
-		var sensorInits = device.eResource.allContents.filter(SENSOR).map[convertSensorInitCode].toList
-		
+		var sensorInits = device.eResource.allContents.filter(SENSOR).toList.convertSensorInitCode
+
 		// Used to detect which device to send commands to
-		var sendToCommands = device.eAllContents.filter(SendCommand).toSet
+		var sendToCommands = device.eAllContents.filter(SendCommand).toMap([T|T.target.name], [V|V])
 
 		var string = '''
 			import pycom
@@ -88,11 +89,11 @@ class IoTGenerator extends AbstractGenerator {
 				
 			«ENDFOR»
 			
-			«FOR sendToCommand : sendToCommands»
+			«FOR sendToCommand : sendToCommands.values»
 				«IF sendToCommand.target.program.listenStatements.size > 0»
-				socket«sendToCommand.target.name» = socket.socket()
-				socket«sendToCommand.target.name».setblocking(True)
-				socket«sendToCommand.target.name».connect(('«sendToCommand.target.program.listenStatements.get(0).ip»', «sendToCommand.target.program.listenStatements.get(0).port»))
+					socket«sendToCommand.target.name» = socket.socket()
+					socket«sendToCommand.target.name».setblocking(True)
+					socket«sendToCommand.target.name».connect(('«sendToCommand.target.program.listenStatements.get(0).ip»', «sendToCommand.target.program.listenStatements.get(0).port»))
 				«ENDIF»
 			«ENDFOR»
 			
@@ -100,14 +101,7 @@ class IoTGenerator extends AbstractGenerator {
 				«v.convToPy»
 			«ENDFOR»
 			
-			«FOR s : sensorInits»
-				«s»
-			«ENDFOR»
-			
-			def th_func(delay, action):
-				while True:
-					time.sleep(delay)
-					action()
+			«sensorInits»
 			
 			«FOR t : loopTexts»
 				«t»
@@ -117,26 +111,27 @@ class IoTGenerator extends AbstractGenerator {
 		return string
 	}
 
-	def CharSequence convertSensorInitCode(SENSOR s) {
-		switch (s) {
-			LIGHTSENSOR: {
+	def CharSequence convertSensorInitCode(List<SENSOR> s) {
+		var string = ""
+		if (s.filter(LIGHTSENSOR).size > 0) {
 
-				'''
-					integration_time = LTR329ALS01.ALS_INT_50
-					measurement_rate = LTR329ALS01.ALS_RATE_50 
-					gain = LTR329ALS01.ALS_GAIN_1X 
-					lightsensor = LTR329ALS01(integration=integration_time, rate=measurement_rate, gain=gain)
-				'''
-			}
-			TEMPERATURE: {
-				'''
-					p_out = Pin('P19', mode=Pin.OUT)
-					p_out.value(1)
-					adc = ADC()             # create an ADC object
-					apin = adc.channel(pin='P16', attn=2)   # create an analog pin on P16
-				'''
-			}
+			string += '''
+				integration_time = LTR329ALS01.ALS_INT_50
+				measurement_rate = LTR329ALS01.ALS_RATE_50 
+				gain = LTR329ALS01.ALS_GAIN_1X 
+				lightsensor = LTR329ALS01(integration=integration_time, rate=measurement_rate, gain=gain)
+			'''
 		}
+		if (s.filter(TEMPERATURE).size > 0) {
+			string += '''
+				p_out = Pin('P19', mode=Pin.OUT)
+				p_out.value(1)
+				adc = ADC()             # create an ADC object
+				apin = adc.channel(pin='P16', attn=2)   # create an analog pin on P16
+			'''
+		}
+		string
+
 	}
 
 	def convToPy(VarOrList vl) {
@@ -155,17 +150,40 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def CharSequence convLoop(Loop loop, int i) {
-		val seconds = convertTime(loop.timeUnit, loop.timeVal)
-
-		return '''
+		'''
+			def th_func«i»(action):
+				while True:
+					time.sleep(«loop.convertSleepTime»)
+					action()
+					
 			def loop«i»():
 				«FOR cmd : loop.command»
 					«cmd.convCMD()»
 				«ENDFOR»
 			
-			_thread.start_new_thread(th_func, («seconds», loop«i»))
-			
+			_thread.start_new_thread(th_func«i», (loop«i»))
 		'''
+
+		
+
+	}
+
+	def String convertSleepTime(Loop loop) {
+		if (loop.timeVal === null) {
+			return "0"
+		}
+		val exp = loop.timeVal
+
+		switch (exp) {
+			VarAccess: {
+				return exp.variableName.name
+			}
+			IntExpression: {
+				return convertTime(loop.timeUnit, exp.value).toString
+			}
+			default:
+				throw new Exception("Invalid time value" + exp)
+		}
 	}
 
 	def convertTime(TIMEUNIT timeunit, int timevalue) {
@@ -185,7 +203,7 @@ class IoTGenerator extends AbstractGenerator {
 			ClearListAction: '''
 				global «cmd.list.name»
 				«cmd.list.name» = []
-				'''
+			'''
 			LEDAction: '''pycom.rgbled(«cmd.state == 'ON' ? '0xFFFFFF':'0x000000'»)'''
 			ArrowCommand: {
 
@@ -244,23 +262,25 @@ class IoTGenerator extends AbstractGenerator {
 			'''
 			ExternalRight: '''externals.«right.method.name»(value)'''
 			Block: {
-					var commands = ""
-					for (command : right.commands) {
-						commands += command.convCMD
-					}
-					commands
+				var commands = ""
+				for (command : right.commands) {
+					commands += command.convCMD
 				}
-			default: throw new Exception(right.class.toString + " not implemented for ExpressionRight")
+				commands
+			}
+			default:
+				throw new Exception(right.class.toString + " not implemented for ExpressionRight")
 		}
 	}
 
 	def getSendToDevice(Device targetDevice) {
 
 		var connectionList = this.currentDevice.program.connectStatements.filter([device == targetDevice]).toList
-		var connection = connectionList.length > 0 ? connectionList.get(0) :
-			targetDevice.eAllContents.filter(ListenStatement).toList.get(0)
+		var connection = connectionList.length > 0
+				? connectionList.get(0)
+				: targetDevice.eAllContents.filter(ListenStatement).toList.get(0)
 
-		switch(connection) {
+		switch (connection) {
 			ConnectStatement: {
 				// Send over serial				
 				currentDevice.serialWrite(targetDevice)
@@ -274,11 +294,11 @@ class IoTGenerator extends AbstractGenerator {
 			}
 		}
 	}
-	
+
 	def dispatch serialWrite(IoTDevice device, Device _) {
 		return '''print(value)''' // print sends a value over serial USB connection on PyCom devices.
 	}
-	
+
 	def dispatch serialWrite(ControllerDevice device, Device targetDevice) {
 		return '''serial«targetDevice.name».write(str(value) + "\n")'''
 	}
@@ -345,7 +365,7 @@ class IoTGenerator extends AbstractGenerator {
 			loopTexts.add(text)
 		}
 		var listenStatements = device.eAllContents.filter(ListenStatement).toList
-		
+
 		var string = '''
 			import serial
 			import time
@@ -369,11 +389,6 @@ class IoTGenerator extends AbstractGenerator {
 				«v.convToPy»
 			«ENDFOR»
 			
-			def th_func(delay, action):
-				while True:
-					time.sleep(delay)
-					action()
-						
 			«FOR t : loopTexts»
 				«t»
 			«ENDFOR»
@@ -412,9 +427,9 @@ class IoTGenerator extends AbstractGenerator {
 				            if data:
 				                value = str(data) # read data
 				                value = value[2:-1] # remove b'...'
-				               	
+				                
 				                «listenStatements.get(0).body.convExpRight»
-					                
+				                 
 				_thread.start_new_thread(th_func, (0, run_server))
 			«ENDIF»
 			
@@ -456,7 +471,8 @@ class IoTGenerator extends AbstractGenerator {
 					uart.init(«map.get('baudrate')», bits=«map.get('bits')», parity=«map.get('parity')», stop=«map.get('stopbit')»)
 				'''
 			}
-			default: throw new Exception(statement.class.toString +  " unexpected for method convConfigurationIoT.")
+			default:
+				throw new Exception(statement.class.toString + " unexpected for method convConfigurationIoT.")
 		}
 	}
 
@@ -500,17 +516,17 @@ class IoTGenerator extends AbstractGenerator {
 		map.put('parity', convertedParity ?: 'serial.PARITY_NONE')
 		map
 	}
-	
+
 	def String convertParityToPy(String parity) {
-		
-		switch(parity){
-			case '0', case 'None':  'serial.PARITY_NONE'
-			case 'even' : "serial.PARITY_EVEN"
+
+		switch (parity) {
+			case '0',
+			case 'None': 'serial.PARITY_NONE'
+			case 'even': "serial.PARITY_EVEN"
 			case "odd": "serial.PARITY_ODD"
-			case "mark" :  "serial.PARITY_MARK"
+			case "mark": "serial.PARITY_MARK"
 			case "space": "serial.PARITY_SPACE"
 			default: null
-			
 		}
 	}
 

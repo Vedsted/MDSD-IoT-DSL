@@ -1,10 +1,11 @@
 
 //type int
-//type list
+//type list  
 
 // Externals
 external double("int")
 external median("list")
+external mean("list")
 external log("int")
 external processing("string")
 // TODO types
@@ -39,7 +40,7 @@ iot device LightSensingDevice {
 	var samplingspeed2 = 2
 	var altSpeed = 25
 	// loop
-	every 5 SECONDS {
+	every samplingspeed SECONDS {
 		read from LIGHTSENSOR -> to lux
 		if (lux > 500) {
 			LED OFF		
@@ -47,7 +48,7 @@ iot device LightSensingDevice {
     		read var altSpeed -> to samplingspeed
 		} else {
 			LED ON
-    		median of mytLSIT -> send to SerialController
+    		mean of mytLSIT -> send to SerialController
 		}
     	
     	read var lux -> send to WifiController
@@ -59,7 +60,7 @@ iot device LightSensingDevice {
 		if (lux > 500) {
 			LED OFF		
     		median of  mytLSIT -> send to SerialController
-    		read var altSpeed -> to samplingspeed
+    		read var altSpeed -> to samplingspeed2
 		} else {
 			LED ON
     		median of mytLSIT -> send to SerialController
@@ -67,22 +68,32 @@ iot device LightSensingDevice {
     	
     	read var lux -> send to WifiController
     	
-	}
+	} 
 }
 
 
 controller device SerialController {
-	connect to LightSensingDevice on '/dev/ttyACM0' using CombinedSerialConfig
 	
 	list readLux
-
+	var looooongSleep = 10
+	var shortsleep = 1
+	var sleeptime = 5
 	
-	always {
-    	read from LightSensingDevice ->add to readLux
-    	median of readLux -> log of value
-    	median of readLux -> send to Cloud
+	every sleeptime SECONDS {
+		read var sleeptime -> log of value
+		
+		if(sleeptime == shortsleep){
+			
+			read var looooongSleep -> to sleeptime
+		}else{
+			read var shortsleep -> to sleeptime
+			
+		}
 	}
+	
 }
+
+
 
 controller device WifiController {
 	list myValues
@@ -90,7 +101,7 @@ controller device WifiController {
 	
 	listen on 192.168.0.3:21531 -> add to myValues
 	
-	every 5 SECONDS {
+	every 999999999 WEEKS {
 		median of myValues -> send to Cloud
 	}
 	

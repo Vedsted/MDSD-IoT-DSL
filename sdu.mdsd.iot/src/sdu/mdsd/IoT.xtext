@@ -96,7 +96,7 @@ VarOrList:
 ;
 
 Loop:
-	('always'|'every' timeVal=INT timeUnit=TIMEUNIT) '{'
+	('always'|'every' timeVal=Expression timeUnit=TIMEUNIT) '{'
 		command+=Command*
 	'}'
 ;
@@ -138,7 +138,7 @@ ExpressionLeft:
 ;
 
 Expression:
-	BoolExpression | IntExpression
+	BoolExpression | IntExpression | {VarAccess} variableName=[VarOrList]
 ;
 
 BoolExpression:
