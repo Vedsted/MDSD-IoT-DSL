@@ -189,7 +189,7 @@ class IoTGenerator extends AbstractGenerator {
 
 	def convertTime(TIMEUNIT timeunit, int timevalue) {
 		switch timeunit {
-			MILLISECONDS: timevalue / 1000
+			MILLISECONDS: timevalue / 1000.0
 			SECONDS: timevalue
 			MINUTES: timevalue * 60
 			HOURS: timevalue * 3600
