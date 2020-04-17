@@ -366,6 +366,9 @@ class IoTGenerator extends AbstractGenerator {
 			loopTexts.add(text)
 		}
 		var listenStatements = device.eAllContents.filter(ListenStatement).toList
+		
+		// Used to detect which device to send commands to
+		var sendToCommands = device.eAllContents.filter(SendCommand).toMap([T|T.target.name], [V|V])
 
 		var string = '''
 			import serial
@@ -385,6 +388,15 @@ class IoTGenerator extends AbstractGenerator {
 			«FOR connectionStatement : device.program.connectStatements»
 				«connectionStatement.convConfigurationController»
 			«ENDFOR»
+			
+			«FOR sendToCommand : sendToCommands.values»
+				«IF sendToCommand.target.program.listenStatements.size > 0»
+				socket«sendToCommand.target.name» = socket.socket()
+				socket«sendToCommand.target.name».setblocking(True)
+				socket«sendToCommand.target.name».connect(('«sendToCommand.target.program.listenStatements.get(0).ip»', «sendToCommand.target.program.listenStatements.get(0).port»))
+				«ENDIF»
+			«ENDFOR»
+			
 			
 			«FOR v : device.program.variables»
 				«v.convToPy»
