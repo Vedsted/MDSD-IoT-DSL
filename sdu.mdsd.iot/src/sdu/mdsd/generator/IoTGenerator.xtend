@@ -301,7 +301,7 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def dispatch serialWrite(ControllerDevice device, Device targetDevice) {
-		return '''serial«targetDevice.name».write(str(value) + "\n")'''
+		return '''serial«targetDevice.name».write(bytes(str(value) + "\n", "utf8"))'''
 	}
 
 	def convExpLeft(ExpressionLeft left) {
@@ -327,7 +327,7 @@ class IoTGenerator extends AbstractGenerator {
 				if (connection.configuration.type == "WLAN") {
 					return '''return socket.recv(1024)'''
 				} else if (connection.configuration.type == "SERIAL") {
-					return '''return uart.readall()'''
+					return '''return uart.readline()'''
 				} else {
 					throw new Exception("Connect config not found")
 				}
