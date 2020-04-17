@@ -62,7 +62,8 @@ class IoTGenerator extends AbstractGenerator {
 
 		// Used to detect which device to send commands to
 		var sendToCommands = device.eAllContents.filter(SendCommand).toMap([T|T.target.name], [V|V])
-
+		var listenStatements = device.eAllContents.filter(ListenStatement).toList
+		
 		var string = '''
 			import pycom
 			import time
@@ -107,6 +108,10 @@ class IoTGenerator extends AbstractGenerator {
 			«FOR t : loopTexts»
 				«t»
 			«ENDFOR»
+			
+			«insertSocketCode(listenStatements)»
+			
+			
 		'''
 		currentDevice = null;
 		return string
@@ -406,49 +411,7 @@ class IoTGenerator extends AbstractGenerator {
 				«t»
 			«ENDFOR»
 			
-			«IF listenStatements.length > 0»
-				server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-				print('Socket created')				
-				
-				# Bind socket to local host and port
-				try:
-				    server.bind(('«listenStatements.get(0).ip»', «listenStatements.get(0).port»))
-				    
-				except socket.error as msg:
-				    print('Bind failed. Error Code : ' + msg + ' Message ' + str(msg))
-				    sys.exit()
-				
-				server.listen(10)
-				input = [server, ]  # a list of all connections we want to check for data
-				# each time we call select.select()
-				
-				def run_server():
-				    inputready, outputready, exceptready = select.select(input, [], [])
-				
-				    for s in inputready:  # check each socket that select() said has available data
-				
-				        if s == server:  # if select returns our server socket, there is a new
-				                        # remote socket trying to connect
-				            client, address = server.accept()
-				            # add it to the socket list so we can check it now
-				            input.append(client)
-				            print('new client added%s' % str(address))
-				
-				        else:
-				            # select has indicated that these sockets have data available to recv
-				            data = s.recv(1024)
-				            if data:
-				                value = str(data) # read data
-				                value = value[2:-1] # remove b'...'
-				                
-				                «listenStatements.get(0).body.convExpRight»
-				                 
-				def th_func_socket(action):
-					while True:
-						action()
-				
-				_thread.start_new_thread(th_func_socket, (run_server,))
-			«ENDIF»
+			«insertSocketCode(listenStatements)»
 			
 			# Do nothing forever, because the thread(s) started above would exit if this (main) thread exits.
 			while True:
@@ -456,6 +419,54 @@ class IoTGenerator extends AbstractGenerator {
 		'''
 		currentDevice = null;
 		return string
+	}
+	
+	def String insertSocketCode(List<ListenStatement> listenStatements) {
+		'''
+		«IF listenStatements.length > 0»
+						server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+						print('Socket created')				
+						
+						# Bind socket to local host and port
+						try:
+						    server.bind(('«listenStatements.get(0).ip»', «listenStatements.get(0).port»))
+						    
+						except socket.error as msg:
+						    print('Bind failed. Error Code : ' + msg + ' Message ' + str(msg))
+						    sys.exit()
+						
+						server.listen(10)
+						input = [server, ]  # a list of all connections we want to check for data
+						# each time we call select.select()
+						
+						def run_server():
+						    inputready, outputready, exceptready = select.select(input, [], [])
+						
+						    for s in inputready:  # check each socket that select() said has available data
+						
+						        if s == server:  # if select returns our server socket, there is a new
+						                        # remote socket trying to connect
+						            client, address = server.accept()
+						            # add it to the socket list so we can check it now
+						            input.append(client)
+						            print('new client added%s' % str(address))
+						
+						        else:
+						            # select has indicated that these sockets have data available to recv
+						            data = s.recv(1024)
+						            if data:
+						                value = str(data) # read data
+						                value = value[2:-1] # remove b'...'
+						                
+						                «listenStatements.get(0).body.convExpRight»
+						                 
+						def th_func_socket(action):
+							while True:
+								action()
+						
+						_thread.start_new_thread(th_func_socket, (run_server,))
+					«ENDIF»
+			'''
 	}
 
 	def String convWifiStatement(WifiStatement statement) {
