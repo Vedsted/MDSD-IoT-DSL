@@ -73,7 +73,8 @@ class IoTGenerator extends AbstractGenerator {
 			from LTR329ALS01 import LTR329ALS01
 			
 			«IF (getExternals(device).length > 0)»
-				from externals import«FOR moduleName : getExternals(device) SEPARATOR(',')» «moduleName»«ENDFOR»
+				# You need to declare and implement: «FOR moduleName : getExternals(device) SEPARATOR(',')» «moduleName» «ENDFOR»
+				import externals
 			«ENDIF»
 			
 			«IF (containsLedAction(_resource))» 
