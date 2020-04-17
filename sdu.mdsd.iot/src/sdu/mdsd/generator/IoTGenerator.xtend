@@ -162,7 +162,7 @@ class IoTGenerator extends AbstractGenerator {
 					«cmd.convCMD()»
 				«ENDFOR»
 			
-			_thread.start_new_thread(th_func«i», (loop«i»))
+			_thread.start_new_thread(th_func«i», (loop«i»,))
 		'''
 
 		
@@ -431,7 +431,11 @@ class IoTGenerator extends AbstractGenerator {
 				                
 				                «listenStatements.get(0).body.convExpRight»
 				                 
-				_thread.start_new_thread(th_func, (0, run_server))
+				def th_func_socket(action):
+					while True:
+						action()
+				
+				_thread.start_new_thread(th_func_socket, (run_server,))
 			«ENDIF»
 			
 			# Do nothing forever, because the thread(s) started above would exit if this (main) thread exits.
