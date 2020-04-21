@@ -13,7 +13,7 @@ terminal IP returns ecore::EString: INT'.'INT'.'INT'.'INT; // IP
 terminal WINDOWS_SERIAL returns ecore::EString: 'COM'INT;
 
 ExternalDeclaration:
-	'external' name=ID '(' type=STRING ')'
+	'external' name=ID // '(' type=STRING ')' // Commented out due to not being used
 ;
 
 
