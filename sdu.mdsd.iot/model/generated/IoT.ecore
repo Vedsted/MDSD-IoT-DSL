@@ -2,12 +2,62 @@
 <ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="ioT" nsURI="http://www.mdsd.sdu/IoT" nsPrefix="ioT">
   <eClassifiers xsi:type="ecore:EClass" name="Model">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="deviceTypes" upperBound="-1"
+        eType="#//DeviceDefinition" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="system" eType="#//IoTSystem"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DeviceDefinition">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="implementations" upperBound="-1"
+        eType="#//Implementation" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Implementation">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="params" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="body" eType="#//ImplBody"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ExternalImpl" eSuperTypes="#//Implementation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ListDeclImpl" eSuperTypes="#//Implementation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ListClearImpl" eSuperTypes="#//Implementation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ListAddImpl" eSuperTypes="#//Implementation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ArrowImpl" eSuperTypes="#//Implementation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="LoopImpl" eSuperTypes="#//Implementation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="SocketConnectImpl" eSuperTypes="#//Implementation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="SensorImpl" eSuperTypes="#//Implementation">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SocketListenImpl" eSuperTypes="#//Implementation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="WlanImpl" eSuperTypes="#//Implementation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ImplBody">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="imports" eType="#//Import"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="setup" eType="#//SetupCode"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="use" eType="#//UseCode"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="UseCode">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SetupCode">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Import">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="IoTSystem">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="deviceDefinitions" upperBound="-1"
+        eType="#//DeviceTypeImport" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="externalDeclarations" upperBound="-1"
         eType="#//ExternalDeclaration" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="configs" upperBound="-1"
         eType="#//Config" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="devices" upperBound="-1"
         eType="#//Device" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DeviceTypeImport">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="importedType" eType="#//DeviceDefinition"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ExternalDeclaration">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>

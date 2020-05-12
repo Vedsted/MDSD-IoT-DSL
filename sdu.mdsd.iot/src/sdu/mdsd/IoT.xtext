@@ -1,247 +1,273 @@
 grammar sdu.mdsd.IoT with org.eclipse.xtext.common.Terminals
+
 import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+
 generate ioT "http://www.mdsd.sdu/IoT"
 
 Model:
+	deviceTypes+=DeviceDefinition*
+	system=IoTSystem;
+
+DeviceDefinition:
+	'devicetype' name=ID
+	implementations+=Implementation*;
+
+
+Implementation:
+	WlanImpl | SocketListenImpl | SensorImpl | SocketConnectImpl | LoopImpl | ArrowImpl | ListDeclImpl | ListAddImpl |
+	ListClearImpl | ExternalImpl;
+
+ExternalImpl:
+	'external' params=ImplParams? ':'
+	body=ImplBody;
+
+ListDeclImpl:
+	'listdeclare' params=ImplParams? ':'
+	body=ImplBody;
+
+ListClearImpl:
+	'listclear' params=ImplParams? ':'
+	body=ImplBody;
+
+ListAddImpl:
+	'listaddto' params=ImplParams? ':'
+	body=ImplBody;
+
+ArrowImpl:
+	'arrow' params=ImplParams? ':'
+	body=ImplBody;
+
+LoopImpl:
+	'loop' params=ImplParams? ':'
+	body=ImplBody;
+
+SocketConnectImpl:
+	'socketconnection' params=ImplParams? ':'
+	body=ImplBody;
+
+SensorImpl:
+	'sensor' name=ID params=ImplParams? ':'
+	body=ImplBody;
+
+SocketListenImpl:
+	'socketlisten' params=ImplParams? ':'
+	body=ImplBody;
+
+WlanImpl:
+	'wlan' params=ImplParams? ':'
+	body=ImplBody;
+
+ImplBody:
+	imports=Import?
+	setup=SetupCode?
+	use=UseCode?;
+
+UseCode:
+	'use:' code=STRING;
+
+SetupCode:
+	'setup:' code=STRING;
+
+Import:
+	'import:' code=STRING;
+
+ImplParams:
+	'(' ID (',' ID)* ')';
+
+IoTSystem:
+	{IoTSystem}
+	deviceDefinitions+=DeviceTypeImport*
 	externalDeclarations+=ExternalDeclaration*
 	configs+=Config*
-	devices+=Device*
-;
+	devices+=Device*;
 
+DeviceTypeImport:
+	'import' importedType=[DeviceDefinition];
 
-terminal IP returns ecore::EString: INT'.'INT'.'INT'.'INT; // IP
-terminal WINDOWS_SERIAL returns ecore::EString: 'COM'INT;
+terminal IP returns ecore::EString:
+	INT '.' INT '.' INT '.' INT; // IP
+terminal WINDOWS_SERIAL returns ecore::EString:
+	'COM' INT;
 
 ExternalDeclaration:
 	'external' name=ID // '(' type=STRING ')' // Commented out due to not being used
 ;
 
-
 /*
  * Configurations
  */
 Config:
-	ConnectionConfig | DeviceConfig
-;
+	ConnectionConfig | DeviceConfig;
 
 DeviceConfig returns Config:
-	{DeviceConfig}'deviceConfig' name=ID '{'
-		declarations+=Declaration*
-	'}'
-;
+	{DeviceConfig} 'deviceConfig' name=ID '{'
+	declarations+=Declaration*
+	'}';
 
 ConnectionConfig returns Config:
 	{ConnectionConfig} 'connectionConfig' name=ID '{'
-		'type' ':' type=ConfigType
-		declarations+=Declaration*
-	'}'
-;
+	'type' ':' type=ConfigType
+	declarations+=Declaration*
+	'}';
 
 ConfigType:
-	'SERIAL' | 'WLAN'
-;
+	'SERIAL' | 'WLAN';
 
 Declaration:
-	key=STRING':'value=STRING
-;
+	key=STRING ':' value=STRING;
 
-/*
+	/*
  * Device 
  */
 Device:
-	IoTDevice | ControllerDevice
-;
+	IoTDevice | ControllerDevice;
 
 ControllerDevice:
 	'controller' 'device' name=ID '{'
-		program=Program
-	'}'
-;
+	program=Program
+	'}';
 
 IoTDevice:
 	'iot' 'device' name=ID '{'
-		program=Program
-	'}'
-;
+	program=Program
+	'}';
 
 Program:
 	(wifiStatements=WifiStatement)?
 	connectStatements+=ConnectStatement*
 	variables+=VarOrList*
 	listenStatements+=ListenStatement*
-	loops+=Loop*
-;
+	loops+=Loop*;
 
 ListenStatement:
-	'listen' 'on' ip=IP ':' port=INT '->' body=ExpressionRight
-;
+	'listen' 'on' ip=IP ':' port=INT '->' body=ExpressionRight;
 
 WifiStatement:
-	'setup' connectionConfig=[ConnectionConfig]
-;
+	'setup' connectionConfig=[ConnectionConfig];
 
 ConnectStatement:
-		'connect' 'to' device=[Device] 'on' address=Address 'using' configuration=[ConnectionConfig]
-;
+	'connect' 'to' device=[Device] 'on' address=Address 'using' configuration=[ConnectionConfig];
 
 Address:
-	{IpAddress} value=IP | 
-	{WindowsSerialAddress} value=WINDOWS_SERIAL | 
+	{IpAddress} value=IP |
+	{WindowsSerialAddress} value=WINDOWS_SERIAL |
 	{UnixSerialAddress} value=STRING // TODO: validation
 ;
 
-
 VarOrList:
-	({Variable}'var' name=ID  ('=' value=Expression)? | {PyList} 'list' name=ID) 
-;
+	({Variable} 'var' name=ID ('=' value=Expression)? | {PyList} 'list' name=ID);
 
 Loop:
-	('always'|'every' timeVal=Expression timeUnit=TIMEUNIT) '{'
-		command+=Command*
-	'}'
-;
+	('always' | 'every' timeVal=Expression timeUnit=TIMEUNIT) '{'
+	command+=Command*
+	'}';
 
 TIMEUNIT:
-	{MILLISECONDS} 'MILLISECONDS' 	|
-	{SECONDS} 'SECONDS' 			|
-	{MINUTES} 'MINUTES'				|
-	{HOURS} 'HOURS'					|
-	{DAYS} 'DAYS'					|
-	{WEEKS} 'WEEKS'					
-
-;
-
+	{MILLISECONDS} 'MILLISECONDS' |
+	{SECONDS} 'SECONDS' |
+	{MINUTES} 'MINUTES' |
+	{HOURS} 'HOURS' |
+	{DAYS} 'DAYS' |
+	{WEEKS} 'WEEKS';
 
 Command:
-	Action | ArrowCommand | IfStatement
-;
+	Action | ArrowCommand | IfStatement;
 
 Action returns Command:
 	ClearListAction |
-	LEDAction
-;
+	LEDAction;
 
 ClearListAction returns Action:
-	{ClearListAction} 'clear' list=[PyList]
-;
+	{ClearListAction} 'clear' list=[PyList];
 
 LEDAction returns Action:
-	{LEDAction} 'LED' state=('ON'|'OFF')
-;
+	{LEDAction} 'LED' state=('ON' | 'OFF');
 
 ArrowCommand returns Command:
-	{ArrowCommand} left=ExpressionLeft '->' right=ExpressionRight
-;
+	{ArrowCommand} left=ExpressionLeft '->' right=ExpressionRight;
 
 ExpressionLeft:
-	 ExternalOf | ReadSensor | ReadConnection | ReadVariable | Expression
-;
+	ExternalOf | ReadSensor | ReadConnection | ReadVariable | Expression;
 
 Expression:
-	BoolExpression | IntExpression | {VarAccess} variableName=[VarOrList]
-;
+	BoolExpression | IntExpression | {VarAccess} variableName=[VarOrList];
 
 BoolExpression:
-	value=Bool
-;
+	value=Bool;
 
 IntExpression:
-	value=INT
-;
+	value=INT;
 
 ReadVariable:
-	'read' 'var' value=[Variable]
-;
+	'read' 'var' value=[Variable];
 
 ReadConnection:
-	'read' 'from' source=[Device]
-;
+	'read' 'from' source=[Device];
 
 ExternalOf:
-	method=[ExternalDeclaration] 'of' target=[VarOrList]
-;
+	method=[ExternalDeclaration] 'of' target=[VarOrList];
 
 ReadSensor:
-	'read' 'from' sensor=SENSOR	
-;
+	'read' 'from' sensor=SENSOR;
 
 SENSOR:
 	{LIGHTSENSOR} 'LIGHTSENSOR' |
-	{TEMPERATURE} 'TEMPERATURE'	|
-	{HUMIDITY}	'HUMIDITY'	
-;
-
+	{TEMPERATURE} 'TEMPERATURE' |
+	{HUMIDITY} 'HUMIDITY';
 
 ExpressionRight:
-	SendCommand | AddToList | ToVar | ExternalRight | Block
-;
+	SendCommand | AddToList | ToVar | ExternalRight | Block;
 
 Block:
-	'{' commands+=Command+ '}'
-;
+	'{' commands+=Command+ '}';
 
 ToVar returns ExpressionRight:
-	{ToVar} 'to' variable=[Variable]
-;
+	{ToVar} 'to' variable=[Variable];
 
 AddToList returns ExpressionRight:
-	{AddToList} 'add' 'to' list=[PyList]
-;
+	{AddToList} 'add' 'to' list=[PyList];
 
 ExternalRight:
-	method=[ExternalDeclaration] 'of' 'value'
-;
+	method=[ExternalDeclaration] 'of' 'value';
 
 SendCommand returns ExpressionRight:
-	{SendCommand} 'send' 'to' target=[Device]
-;
+	{SendCommand} 'send' 'to' target=[Device];
 
 IfStatement returns Command:
-	{IfStatement}'if' condition=Comparison '{' commands+=Command+ '}' (elseBlock=ElseBlock)?
-;
+	{IfStatement} 'if' condition=Comparison '{' commands+=Command+ '}' (elseBlock=ElseBlock)?;
 
 ElseBlock:
-	{ElseBlock}'else' '{' commands+=Command+ '}'
-;
-
+	{ElseBlock} 'else' '{' commands+=Command+ '}';
 
 Comparison returns Comparison:
-	OR	
-;
+	OR;
 
 OR returns Comparison:
-	AND ({OR.left=current} ('||'|'OR') right=AND)*
-;
+	AND ({OR.left=current} ('||' | 'OR') right=AND)*;
 
 AND returns Comparison:
-	EQL ({AND.left=current} ('&&'|'AND') right=EQL)*
-;
+	EQL ({AND.left=current} ('&&' | 'AND') right=EQL)*;
 
 EQL returns Comparison:
-	Item ({EQL.left=current} op=ComparisonOp right=Item)?
-;
+	Item ({EQL.left=current} op=ComparisonOp right=Item)?;
 
 Item returns Comparison:
 	Parenthasis |
 	{ItemVariable} value=[Variable] |
 	{ItemInt} value=INT |
-	{ItemBool} value=Bool
-;
+	{ItemBool} value=Bool;
 
 Parenthasis returns Comparison:
-	'(' Comparison ')' 
-;
+	'(' Comparison ')';
 
 ComparisonOp:
-	{GT}op= '>'  |
-	{LT}op= '<'  | 
-	{LE}op= '<=' |
-	{GE}op= '>=' | 
-	{EQ}op= '==' |
-	{NE}op= '!='
-;
+	{GT} op='>' |
+	{LT} op='<' |
+	{LE} op='<=' |
+	{GE} op='>=' |
+	{EQ} op='==' |
+	{NE} op='!=';
 
 Bool:
-	{True} ('TRUE'|'true') | {False} ('FALSE'|'false')
-;
+	{True} ('TRUE' | 'true') | {False} ('FALSE' | 'false');
 

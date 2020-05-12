@@ -1,0 +1,76 @@
+devicetype iotDevice
+	loop (TSECONDS, NAME, COMMANDS):
+		setup:
+"def th_func{{NAME}}(action):
+	while True:
+		time.sleep({{SECONDS}})
+		action()
+
+def loop{{NAME}}():
+	{{COMMANDS}}
+
+_thread.start_new_thread(th_func{{NAME}}, (loop{{NAME}},))"
+	listdeclare (NAME):
+		setup:
+"{{NAME}} = []"
+	listclear (NAME):
+		use:
+"global {{NAME}}
+{{NAME}} = []"
+	listaddto (NAME):
+		use:
+"{{NAME}}.append(value)"
+	
+	external (NAME, TARGETNAME):
+		import:
+"import externals"
+		use:
+"return externals.{{NAME}}({{TARGETNAME}})"
+	arrow (LEFT, RIGHT, UUID):
+		use:
+"def expLeft{{UUID}}
+	{{LEFT}}
+	
+def expRight{{UUID}}(value):
+	{{RIGHT}}
+
+result = expLeft{{UUID}}()
+expRight{{UUID}}(result)"
+
+	wlan (SSID, PASSWORD):
+		import:
+"from network import WLAN
+from machine import idle"
+		setup:
+"wlan = WLAN(mode=WLAN.STA)
+nets = wlan.scan()
+for net in nets:
+	if net.ssid == {{SSID}}:
+		print('Network found!')
+		wlan.connect(net.ssid, auth=(net.sec, {{PASSWORD}}))
+		while not wlan.isconnected():
+			idle() # save power while waiting
+		print('WLAN connection succeeded!')
+		print(wlan.ifconfig()) # Print the connection settings
+		break"
+	sensor TEMP:
+		import:
+"from machine import ADC, Pin" 
+		setup:
+"p_out = Pin('P19', mode=Pin.OUT)
+p_out.value(1)
+adc = ADC()             # create an ADC object
+apin = adc.channel(pin='P16', attn=2)   # create an analog pin on P16"
+		use:
+"temperature = apin()
+return temperature"
+
+	socketconnection (IP, PORT, TARGET_DEVICE):
+		import:
+"import socket"
+		setup:
+"socket{{TARGET_DEVICE}} = socket.socket()
+socket{{TARGET_DEVICE}}.setblocking(True)
+socket{{TARGET_DEVICE}}.connect(('{{IP}}’, {{PORT}}))"
+		use:
+'socket{{TARGET_DEVICE}}.send(bytes(str(value), "utf8"))'
