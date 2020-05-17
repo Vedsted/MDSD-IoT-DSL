@@ -30,34 +30,17 @@
   <eClassifiers xsi:type="ecore:EClass" name="SocketListenImpl" eSuperTypes="#//Implementation"/>
   <eClassifiers xsi:type="ecore:EClass" name="WlanImpl" eSuperTypes="#//Implementation"/>
   <eClassifiers xsi:type="ecore:EClass" name="ImplBody">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="imports" eType="#//Import"
-        containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="setup" eType="#//SetupCode"
-        containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="use" eType="#//UseCode"
-        containment="true"/>
-  </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="UseCode">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-  </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="SetupCode">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-  </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="Import">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="imports" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="setup" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="use" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="IoTSystem">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="deviceDefinitions" upperBound="-1"
-        eType="#//DeviceTypeImport" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="externalDeclarations" upperBound="-1"
         eType="#//ExternalDeclaration" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="configs" upperBound="-1"
         eType="#//Config" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="devices" upperBound="-1"
         eType="#//Device" containment="true"/>
-  </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="DeviceTypeImport">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="importedType" eType="#//DeviceDefinition"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ExternalDeclaration">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
@@ -72,12 +55,11 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Device">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="deviceType" eType="#//DeviceDefinition"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="program" eType="#//Program"
         containment="true"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ControllerDevice" eSuperTypes="#//Device"/>
-  <eClassifiers xsi:type="ecore:EClass" name="IoTDevice" eSuperTypes="#//Device"/>
   <eClassifiers xsi:type="ecore:EClass" name="Program">
     <eStructuralFeatures xsi:type="ecore:EReference" name="wifiStatements" eType="#//WifiStatement"
         containment="true"/>
@@ -142,10 +124,8 @@
     <eStructuralFeatures xsi:type="ecore:EReference" name="target" eType="#//VarOrList"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ReadSensor" eSuperTypes="#//ExpressionLeft">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="sensor" eType="#//SENSOR"
-        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="sensor" eType="#//SensorImpl"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="SENSOR"/>
   <eClassifiers xsi:type="ecore:EClass" name="ExpressionRight"/>
   <eClassifiers xsi:type="ecore:EClass" name="Block" eSuperTypes="#//ExpressionRight">
     <eStructuralFeatures xsi:type="ecore:EReference" name="commands" upperBound="-1"
@@ -196,9 +176,6 @@
   <eClassifiers xsi:type="ecore:EClass" name="VarAccess" eSuperTypes="#//Expression">
     <eStructuralFeatures xsi:type="ecore:EReference" name="variableName" eType="#//VarOrList"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="LIGHTSENSOR" eSuperTypes="#//SENSOR"/>
-  <eClassifiers xsi:type="ecore:EClass" name="TEMPERATURE" eSuperTypes="#//SENSOR"/>
-  <eClassifiers xsi:type="ecore:EClass" name="HUMIDITY" eSuperTypes="#//SENSOR"/>
   <eClassifiers xsi:type="ecore:EClass" name="ToVar" eSuperTypes="#//ExpressionRight">
     <eStructuralFeatures xsi:type="ecore:EReference" name="variable" eType="#//Variable"/>
   </eClassifiers>

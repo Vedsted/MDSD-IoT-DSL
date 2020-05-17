@@ -1,13 +1,11 @@
-import iotDevice
 
 external mean
 external log
- 
 connectionConfig Wifi{
 	type:WLAN
 	"ssid":"Network2GHz"
 	"password": "kalenderlys"
-	
+	 
 }
 
 iot device Cup {
@@ -15,7 +13,7 @@ iot device Cup {
 	list temps
 	
 	every 10 MILLISECONDS{
-		read from TEMPERATURE -> add to temps
+		read sensor iot.TEMPERATURE -> add to temps
 	}
 	
 	every 100 MILLISECONDS {
@@ -26,7 +24,7 @@ iot device Cup {
 }
 
 
-controller device Server{
+controller device Server{ 
 	
 	listen on 192.168.0.16:8000 -> log of value
 	

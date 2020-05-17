@@ -1,9 +1,9 @@
-devicetype iotDevice
+devicetype iot 
 	loop (TSECONDS, NAME, COMMANDS):
-		setup:
+		use:
 "def th_func{{NAME}}(action):
 	while True:
-		time.sleep({{SECONDS}})
+		time.sleep({{TSECONDS}})
 		action()
 
 def loop{{NAME}}():
@@ -28,7 +28,7 @@ _thread.start_new_thread(th_func{{NAME}}, (loop{{NAME}},))"
 "return externals.{{NAME}}({{TARGETNAME}})"
 	arrow (LEFT, RIGHT, UUID):
 		use:
-"def expLeft{{UUID}}
+"def expLeft{{UUID}}():
 	{{LEFT}}
 	
 def expRight{{UUID}}(value):
@@ -53,7 +53,7 @@ for net in nets:
 		print('WLAN connection succeeded!')
 		print(wlan.ifconfig()) # Print the connection settings
 		break"
-	sensor TEMP:
+	sensor TEMPERATURE :
 		import:
 "from machine import ADC, Pin" 
 		setup:

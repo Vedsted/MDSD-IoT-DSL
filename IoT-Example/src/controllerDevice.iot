@@ -1,0 +1,46 @@
+devicetype controller
+	external (NAME):
+		use:
+"externals.{{NAME}}(value)"
+	socketlisten (IP, PORT, COMMANDS):
+		import:
+"import socket
+import select"
+		setup:
+"server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+print('Socket created')				
+
+# Bind socket to local host and port
+try:
+    server.bind((‘{{IP}}’, {{PORT}}))
+except socket.error as msg:
+    print('Bind failed. Error Code : ' + msg + ' Message ' + str(msg))
+    sys.exit()
+
+server.listen(10)
+input = [server, ]  # a list of all connections to check for data
+# each time we call select.select()
+
+def run_server():
+    inputready, outputready, exceptready = select.select(input, [], [])
+	 # check each socket that select() said has available data
+    for s in inputready:  
+		#if select returns our server socket, a new socket is connecting
+        if s == server:          
+            client, address = server.accept()
+            # add it to the socket list so we can check it now
+            input.append(client)
+            print('new client added%s' % str(address))
+        else:
+            # select says that this socket has data available to recv
+            data = s.recv(1024)
+            if data:
+                value = str(data) # read data
+                value = value[2:-1] # remove b'...'
+                {{COMMANDS}}
+                 
+def th_func_socket(action):
+	while True:
+		action()
+_thread.start_new_thread(th_func_socket, (run_server,))"
+

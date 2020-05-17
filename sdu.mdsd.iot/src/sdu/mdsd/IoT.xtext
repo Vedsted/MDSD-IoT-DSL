@@ -46,7 +46,7 @@ SocketConnectImpl:
 	body=ImplBody;
 
 SensorImpl:
-	'sensor' name=ID params=ImplParams? ':'
+	'sensor'  name=ID params=ImplParams?':'
 	body=ImplBody;
 
 SocketListenImpl:
@@ -58,31 +58,24 @@ WlanImpl:
 	body=ImplBody;
 
 ImplBody:
-	imports=Import?
-	setup=SetupCode?
-	use=UseCode?;
+	{ImplBody} 
+	('import:' imports=STRING)?
+	('setup:'setup=STRING)?
+	('use:' use=STRING)?
+	;
 
-UseCode:
-	'use:' code=STRING;
 
-SetupCode:
-	'setup:' code=STRING;
-
-Import:
-	'import:' code=STRING;
 
 ImplParams:
 	'(' ID (',' ID)* ')';
 
 IoTSystem:
 	{IoTSystem}
-	deviceDefinitions+=DeviceTypeImport*
 	externalDeclarations+=ExternalDeclaration*
 	configs+=Config*
 	devices+=Device*;
 
-DeviceTypeImport:
-	'import' importedType=[DeviceDefinition];
+QualifiedName: ID ('.' ID)* ;
 
 terminal IP returns ecore::EString:
 	INT '.' INT '.' INT '.' INT; // IP
@@ -120,15 +113,7 @@ Declaration:
  * Device 
  */
 Device:
-	IoTDevice | ControllerDevice;
-
-ControllerDevice:
-	'controller' 'device' name=ID '{'
-	program=Program
-	'}';
-
-IoTDevice:
-	'iot' 'device' name=ID '{'
+	deviceType=[DeviceDefinition] 'device' name=ID '{'
 	program=Program
 	'}';
 
@@ -208,12 +193,7 @@ ExternalOf:
 	method=[ExternalDeclaration] 'of' target=[VarOrList];
 
 ReadSensor:
-	'read' 'from' sensor=SENSOR;
-
-SENSOR:
-	{LIGHTSENSOR} 'LIGHTSENSOR' |
-	{TEMPERATURE} 'TEMPERATURE' |
-	{HUMIDITY} 'HUMIDITY';
+	'read' 'sensor' sensor=[SensorImpl|QualifiedName];
 
 ExpressionRight:
 	SendCommand | AddToList | ToVar | ExternalRight | Block;

@@ -14,12 +14,19 @@ import java.util.ArrayList
 import sdu.mdsd.ioT.ExpressionLeft
 import sdu.mdsd.ioT.ExpressionRight
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock
-import sdu.mdsd.ioT.SENSOR
 import java.util.UUID
 import sdu.mdsd.ioT.Device
 import sdu.mdsd.services.IoTGrammarAccess.SendCommandElements
 import java.util.Map
 import sdu.mdsd.ioT.Loop
+import java.util.stream.Collectors
+import org.eclipse.emf.common.util.EList
+import sdu.mdsd.ioT.VarOrList
+import sdu.mdsd.ioT.ListDeclImpl
+import sdu.mdsd.ioT.WifiStatement
+import sdu.mdsd.ioT.Command
+import sdu.mdsd.ioT.impl.ClearListActionImpl
+import sdu.mdsd.ioT.ListenStatement
 
 /**
  * Generates code from your model files on save.
@@ -31,12 +38,15 @@ class IoTGenerator extends AbstractGenerator {
 	Device currentDevice;
 	Resource _resource
 
+	String currentProgramString;
+	List<String> usedSetups;
+
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		// var model = resource.allContents.filter(Model).toList
 		_resource = resource
 		for (dev : resource.allContents.filter(Device).toList) {
 
-			fsa.generateFile('''«dev.name»/main.py''', dev.convDevice)
+			fsa.generateFile('''«dev.name»/main.py''', dev.convertDevice)
 		}
 	}
 
@@ -51,19 +61,271 @@ class IoTGenerator extends AbstractGenerator {
 		return names
 	}
 
-	def dispatch convDevice(IoTDevice device) {
+	def convertDevice(Device device) {
+		currentDevice = device
+		usedSetups = new ArrayList<String>()
+		var importString = buildImports(device)
+		var programString = buildProgram(device)
+
+		var string = '''
+			«importString»
+			
+			«buildSetups()»
+			
+			«programString»
+		'''
+
+		return string;
+	}
+
+	def buildSetups() {
+		var sb = new StringBuilder();
+		for (setup : usedSetups.stream.distinct().collect(Collectors.toList)) {
+			sb.append(setup);
+			sb.append("\n")
+		}
+		return sb.toString()
+	}
+
+	def buildProgram(Device device) {
+		var sb = new StringBuilder()
+		var program = device.program
+
+		sb.append(generateCodeForWifiStatement(program.wifiStatements))
+		sb.append(generateCodeForVars(program.variables))
+
+		var connectToStatements = program.connectStatements
+		sb.append(generateCodeForListen(program.listenStatements))
+		sb.append(generateCodeForLoops(program.loops))
+		return sb.toString()
+	}
+
+	def generateCodeForListen(EList<ListenStatement> list) {
+		if(list === null || list.isEmpty)
+			return ""
+		var params = new HashMap<String, String>()
+		params.put("IP", currentDevice.program.listenStatements.get(0).ip)
+		params.put("PORT", currentDevice.program.listenStatements.get(0).port.toString())
+		params.put("COMMANDS", currentDevice.program.listenStatements.get(0).body.buildExpression)
+		doSetup(SocketListenImpl, params)
+		return "";
+	}
+
+	def generateCodeForLoops(EList<Loop> list) {
+		var sb = new StringBuilder();
+		var count = 0
+		for (loop : list) {
+			var params = new HashMap<String, String>();
+			params.put("TSECONDS", loop.convertSleepTime)
+			params.put("NAME", count.toString())
+			count++;
+			params.put("COMMANDS", loop.command.buildCommands())
+			sb.append(getUseCodeFor(LoopImpl, params))
+			sb.append("\n")
+		}
+		return sb.toString();
+	}
+
+	def String buildCommands(EList<Command> list) {
+		var sb = new StringBuilder();
+		for (cmd : list) {
+			sb.append(cmd.buildCommand())
+			sb.append("\n")
+		}
+		return sb.toString()
+	}
+
+	def buildCommand(Command command) {
+		switch (command) {
+			ArrowCommand: {
+				var params = new HashMap<String, String>();
+				params.put("LEFT", command.left.buildExpression)
+				params.put("RIGHT", command.right.buildExpression)
+				val uuid = UUID.randomUUID.toString.replace('-', '_'); // dashes are illegal in method names in python
+				params.put("UUID", uuid)
+				return getUseCodeFor(ArrowImpl, params)
+			}
+			Action: {
+				switch (command) {
+					ClearListAction: {
+						var params = new HashMap<String, String>();
+						params.put("NAME", command.list.name)
+						return getUseCodeFor(ListClearImpl, params)
+					}
+				}
+			}
+		}
+	}
+
+	def dispatch String buildExpression(ExpressionLeft exp) {
+		var params = new HashMap<String, String>();
+
+		switch (exp) {
+			ReadSensor: {
+				doSetup(SensorImpl, params)
+				return getUseCodeFor(SensorImpl, params)
+			}
+			ExternalOf: {
+				params.put("NAME", exp.method.name)
+				params.put("TARGETNAME", exp.target.name)
+				return getUseCodeFor(ExternalImpl, params)
+			}
+		}
+	}
+
+	def dispatch String buildExpression(ExpressionRight exp) {
+		var params = new HashMap<String, String>();
+
+		switch (exp) {
+			AddToList: {
+				params.put("NAME", exp.list.name)
+				return getUseCodeFor(ListAddImpl, params)
+			}
+			SendCommand: {
+				params.put("IP", exp.target.program.listenStatements.get(0).ip)
+				params.put("PORT", exp.target.program.listenStatements.get(0).port.toString())
+				params.put("TARGET_DEVICE", exp.target.name)
+				doSetup(SocketConnectImpl, params)
+				return getUseCodeFor(SocketConnectImpl, params)
+			}
+			ExternalRight:{
+				params.put("NAME", exp.method.name)
+				return getUseCodeFor(ExternalImpl, params)
+			}
+		}
+	}
+
+	def String generateCodeForWifiStatement(WifiStatement statement) {
+		if (statement === null)
+			return ""
+		var ssid = currentDevice?.program?.wifiStatements?.connectionConfig?.declarations?.extractDeclaration("ssid")?.
+			value;
+		var pw = currentDevice?.program?.wifiStatements?.connectionConfig?.declarations?.
+			extractDeclaration("password")?.value;
+		if (ssid === null || pw === null)
+			throw new Exception("You should have a connectConfig before connecting to wifi")
+		var params = new HashMap<String, String>()
+		params.put("SSID", ssid)
+		params.put("PASSWORD", pw)
+		doSetup(WlanImpl, params)
+		return "";
+	}
+
+	def generateCodeForVars(EList<VarOrList> list) {
+		for (varorlist : list) {
+			switch (varorlist) {
+				Variable: {
+					throw new Exception("NOT IMPLEMENTED YET")
+				}
+				PyList: {
+					var paramsMap = new HashMap<String, String>()
+					paramsMap.put("NAME", varorlist.name);
+					doSetup(ListDeclImpl, paramsMap)
+				}
+				default:
+					throw new Exception("NOT A VAR OR LIST")
+			}
+		}
+		return "";
+	}
+
+	def doSetup(Class<? extends Implementation> class1, Map<String, String> paramsMap) {
+
+		var implementations = currentDevice.deviceType.implementations.filter(class1).toList
+
+		for (impl : implementations) {
+			var setup = impl.body.setup;
+			if (setup !== null) {
+
+				var setUpCode = setup.insertParameters(impl.params, paramsMap)
+				usedSetups.add(setUpCode);
+			}
+		}
+
+	}
+
+	def getUseCodeFor(Class<? extends Implementation> class1, Map<String, String> paramsMap) {
+		var sb = new StringBuilder();
+		var implementations = currentDevice.deviceType.implementations.filter(class1).toList
+
+		for (impl : implementations) {
+			var use = impl.body.use;
+			if (use !== null) {
+
+				var useCode = use.insertParameters(impl.params, paramsMap)
+				sb.append(useCode)
+			}
+		}
+		return sb.toString()
+
+	}
+
+	def insertParameters(String setup, String params, Map<String, String> paramsMap) {
+		var codeString = setup
+		if (codeString === null) {
+			throw new Exception("Why is the code string null")
+		}
+		if (params === null)
+			return codeString
+		var paramList = params.replace('(', '').replace(')', '').split(',').map[trim()];
+		for (param : paramList) {
+			var newValue = paramsMap.get(param);
+			if (newValue === null) {
+				throw new Exception('''«param» was null''')
+			}
+			codeString = codeString.cleverReplace('''{{«param»}}''', newValue)
+		}
+		return codeString;
+	}
+
+	/**
+	 * replaces one string with another string and attempts to make nice indentation
+	 */
+	def cleverReplace(String codeString, String param, String newValue) {
+		var codeStringLines = codeString.split("\n")
+		var newLines = newValue.split("\n")
+		for (var i = 0; i < codeStringLines.length; i++) {
+			var line = codeStringLines.get(i);
+			if (line.contains(param)) {
+				var indentChars = line.toCharArray().takeWhile[c|c == ' ' || c == '\t']
+				var resultsb = new StringBuilder()
+				for (nline : newLines) {
+					resultsb.append(new String(indentChars));
+					resultsb.append(line.replace(param, nline))
+					resultsb.append('\n')
+				}
+
+				codeStringLines.set(i, resultsb.toString())
+			}
+		}
+		return codeStringLines.join('\n')
+	}
+
+	def buildImports(Device device) {
+		// TODO ideally only import things used in the program, but you know
+		var imports = device.deviceType.implementations.filter[body.imports !== null].map[body.imports].toList
+		var strings = new ArrayList<String>();
+		for (import : imports) {
+			// Split on new line to get each import as a separate line.
+			// So we can check for duplicates
+			strings.addAll(import.split("\n"))
+		}
+		// Return distinct list to string
+		return strings.stream.distinct.collect(Collectors.toList()).join("\n")
+	}
+
+	def dispatch convDevice(Device device) {
 		currentDevice = device;
 		var loopTexts = new ArrayList<CharSequence>();
 		for (var i = 0; i < device.program.loops.length; i++) {
 			val text = device.program.loops.get(i).convLoop(i);
 			loopTexts.add(text)
 		}
-		var sensorInits = device.eResource.allContents.filter(SENSOR).toList.convertSensorInitCode
-
+		// var sensorInits = device.eResource.allContents.filter(SENSOR).toList.convertSensorInitCode
 		// Used to detect which device to send commands to
 		var sendToCommands = device.eAllContents.filter(SendCommand).toMap([T|T.target.name], [V|V])
 		var listenStatements = device.eAllContents.filter(ListenStatement).toList
-		
+
 		var string = '''
 			import pycom
 			import time
@@ -103,7 +365,7 @@ class IoTGenerator extends AbstractGenerator {
 				«v.convToPy»
 			«ENDFOR»
 			
-			«sensorInits»
+			«««			«sensorInits»
 			
 			«FOR t : loopTexts»
 				«t»
@@ -117,29 +379,28 @@ class IoTGenerator extends AbstractGenerator {
 		return string
 	}
 
-	def CharSequence convertSensorInitCode(List<SENSOR> s) {
-		var string = ""
-		if (s.filter(LIGHTSENSOR).size > 0) {
-
-			string += '''
-				integration_time = LTR329ALS01.ALS_INT_50
-				measurement_rate = LTR329ALS01.ALS_RATE_50 
-				gain = LTR329ALS01.ALS_GAIN_1X 
-				lightsensor = LTR329ALS01(integration=integration_time, rate=measurement_rate, gain=gain)
-			'''
-		}
-		if (s.filter(TEMPERATURE).size > 0) {
-			string += '''
-				p_out = Pin('P19', mode=Pin.OUT)
-				p_out.value(1)
-				adc = ADC()             # create an ADC object
-				apin = adc.channel(pin='P16', attn=2)   # create an analog pin on P16
-			'''
-		}
-		string
-
-	}
-
+//	def CharSequence convertSensorInitCode(List<SENSOR> s) {
+//		var string = ""
+//		if (s.filter(LIGHTSENSOR).size > 0) {
+//
+//			string += '''
+//				integration_time = LTR329ALS01.ALS_INT_50
+//				measurement_rate = LTR329ALS01.ALS_RATE_50 
+//				gain = LTR329ALS01.ALS_GAIN_1X 
+//				lightsensor = LTR329ALS01(integration=integration_time, rate=measurement_rate, gain=gain)
+//			'''
+//		}
+//		if (s.filter(TEMPERATURE).size > 0) {
+//			string += '''
+//				p_out = Pin('P19', mode=Pin.OUT)
+//				p_out.value(1)
+//				adc = ADC()             # create an ADC object
+//				apin = adc.channel(pin='P16', attn=2)   # create an analog pin on P16
+//			'''
+//		}
+//		string
+//
+//	}
 	def convToPy(VarOrList vl) {
 		switch vl {
 			Variable: '''«vl.name»  = «vl.value !== null ? vl.value.convVariableValue : "None"»'''
@@ -169,8 +430,6 @@ class IoTGenerator extends AbstractGenerator {
 			
 			_thread.start_new_thread(th_func«i», (loop«i»,))
 		'''
-
-		
 
 	}
 
@@ -301,19 +560,15 @@ class IoTGenerator extends AbstractGenerator {
 		}
 	}
 
-	def dispatch serialWrite(IoTDevice device, Device _) {
+	def dispatch serialWrite(Device device, Device _) {
 		return '''print(value)''' // print sends a value over serial USB connection on PyCom devices.
-	}
-
-	def dispatch serialWrite(ControllerDevice device, Device targetDevice) {
-		return '''serial«targetDevice.name».write(bytes(str(value) + "\n", "utf8"))'''
 	}
 
 	def convExpLeft(ExpressionLeft left) {
 		switch (left) {
 			ReadVariable: '''return «left.value.name»'''
-			ReadSensor:
-				left.sensor.getReadSensorCode
+//			ReadSensor:
+//				left.sensor.getReadSensorCode
 			ReadConnection: {
 				left.source.readFromDevice
 			}
@@ -328,7 +583,7 @@ class IoTGenerator extends AbstractGenerator {
 		var connection = connectionList.length > 0 ? connectionList.get(0) : throw new Exception(
 				"A connection to the device not found")
 		switch (currentDevice) {
-			IoTDevice: {
+			Device: {
 				if (connection.configuration.type == "WLAN") {
 					return '''return socket.recv(1024)'''
 				} else if (connection.configuration.type == "SERIAL") {
@@ -337,136 +592,134 @@ class IoTGenerator extends AbstractGenerator {
 					throw new Exception("Connect config not found")
 				}
 			}
-			ControllerDevice: {
-				if (connection.configuration.type == "WLAN") {
-					return '''return socket.recv(1024)'''
-				} else if (connection.configuration.type == "SERIAL") {
-					return '''return serial«sourceDevice.name».readline()'''
-				} else {
-					throw new Exception("Connect config not found")
-				}
-			}
+//			ControllerDevice: {
+//				if (connection.configuration.type == "WLAN") {
+//					return '''return socket.recv(1024)'''
+//				} else if (connection.configuration.type == "SERIAL") {
+//					return '''return serial«sourceDevice.name».readline()'''
+//				} else {
+//					throw new Exception("Connect config not found")
+//				}
+//			}
 		}
 	}
 
-	def getGetReadSensorCode(SENSOR sensor) {
-		switch (sensor) {
-			LIGHTSENSOR: '''
-				luxTuple = lightsensor.light()
-				lux = (luxTuple[0]+luxTuple[1])/2
-				return lux
-			'''
-			TEMPERATURE: '''
-				temperature = apin()
-				return temperature
-			'''
-		}
-	}
-
-	def dispatch convDevice(ControllerDevice device) {
-		currentDevice = device;
-		var loopTexts = new ArrayList<CharSequence>();
-		for (var i = 0; i < device.program.loops.length; i++) {
-			val text = device.program.loops.get(i).convLoop(i);
-			loopTexts.add(text)
-		}
-		var listenStatements = device.eAllContents.filter(ListenStatement).toList
-		
-		// Used to detect which device to send commands to
-		var sendToCommands = device.eAllContents.filter(SendCommand).toMap([T|T.target.name], [V|V])
-
-		var string = '''
-			import serial
-			import time
-			import socket
-			import select
-			import _thread
-			
-			
-			# Initializer
-			
-			«IF (getExternals(device).length > 0)»
-				# You need to declare and implement: «FOR moduleName : getExternals(device) SEPARATOR(',')» «moduleName» «ENDFOR»
-				import externals
-			«ENDIF»
-			
-			«FOR connectionStatement : device.program.connectStatements»
-				«connectionStatement.convConfigurationController»
-			«ENDFOR»
-			
-			«FOR sendToCommand : sendToCommands.values»
-				«IF sendToCommand.target.program.listenStatements.size > 0»
-				socket«sendToCommand.target.name» = socket.socket()
-				socket«sendToCommand.target.name».setblocking(True)
-				socket«sendToCommand.target.name».connect(('«sendToCommand.target.program.listenStatements.get(0).ip»', «sendToCommand.target.program.listenStatements.get(0).port»))
-				«ENDIF»
-			«ENDFOR»
-			
-			
-			«FOR v : device.program.variables»
-				«v.convToPy»
-			«ENDFOR»
-			
-			«FOR t : loopTexts»
-				«t»
-			«ENDFOR»
-			
-			«insertSocketCode(listenStatements)»
-			
-			# Do nothing forever, because the thread(s) started above would exit if this (main) thread exits.
-			while True:
-				time.sleep(100)
-		'''
-		currentDevice = null;
-		return string
-	}
-	
+//	def getGetReadSensorCode(SENSOR sensor) {
+//		switch (sensor) {
+//			LIGHTSENSOR: '''
+//				luxTuple = lightsensor.light()
+//				lux = (luxTuple[0]+luxTuple[1])/2
+//				return lux
+//			'''
+//			TEMPERATURE: '''
+//				temperature = apin()
+//				return temperature
+//			'''
+//		}
+//	}
+//	def dispatch convDevice(Device device) {
+//		currentDevice = device;
+//		var loopTexts = new ArrayList<CharSequence>();
+//		for (var i = 0; i < device.program.loops.length; i++) {
+//			val text = device.program.loops.get(i).convLoop(i);
+//			loopTexts.add(text)
+//		}
+//		var listenStatements = device.eAllContents.filter(ListenStatement).toList
+//		
+//		// Used to detect which device to send commands to
+//		var sendToCommands = device.eAllContents.filter(SendCommand).toMap([T|T.target.name], [V|V])
+//
+//		var string = '''
+//			import serial
+//			import time
+//			import socket
+//			import select
+//			import _thread
+//			
+//			
+//			# Initializer
+//			
+//			«IF (getExternals(device).length > 0)»
+//				# You need to declare and implement: «FOR moduleName : getExternals(device) SEPARATOR(',')» «moduleName» «ENDFOR»
+//				import externals
+//			«ENDIF»
+//			
+//			«FOR connectionStatement : device.program.connectStatements»
+//				«connectionStatement.convConfigurationController»
+//			«ENDFOR»
+//			
+//			«FOR sendToCommand : sendToCommands.values»
+//				«IF sendToCommand.target.program.listenStatements.size > 0»
+//				socket«sendToCommand.target.name» = socket.socket()
+//				socket«sendToCommand.target.name».setblocking(True)
+//				socket«sendToCommand.target.name».connect(('«sendToCommand.target.program.listenStatements.get(0).ip»', «sendToCommand.target.program.listenStatements.get(0).port»))
+//				«ENDIF»
+//			«ENDFOR»
+//			
+//			
+//			«FOR v : device.program.variables»
+//				«v.convToPy»
+//			«ENDFOR»
+//			
+//			«FOR t : loopTexts»
+//				«t»
+//			«ENDFOR»
+//			
+//			«insertSocketCode(listenStatements)»
+//			
+//			# Do nothing forever, because the thread(s) started above would exit if this (main) thread exits.
+//			while True:
+//				time.sleep(100)
+//		'''
+//		currentDevice = null;
+//		return string
+//	}
 	def String insertSocketCode(List<ListenStatement> listenStatements) {
 		'''
-		«IF listenStatements.length > 0»
-						server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-						print('Socket created')				
-						
-						# Bind socket to local host and port
-						try:
-						    server.bind(('«listenStatements.get(0).ip»', «listenStatements.get(0).port»))
-						    
-						except socket.error as msg:
-						    print('Bind failed. Error Code : ' + msg + ' Message ' + str(msg))
-						    sys.exit()
-						
-						server.listen(10)
-						input = [server, ]  # a list of all connections we want to check for data
-						# each time we call select.select()
-						
-						def run_server():
-						    inputready, outputready, exceptready = select.select(input, [], [])
-						
-						    for s in inputready:  # check each socket that select() said has available data
-						
-						        if s == server:  # if select returns our server socket, there is a new
-						                        # remote socket trying to connect
-						            client, address = server.accept()
-						            # add it to the socket list so we can check it now
-						            input.append(client)
-						            print('new client added%s' % str(address))
-						
-						        else:
-						            # select has indicated that these sockets have data available to recv
-						            data = s.recv(1024)
-						            if data:
-						                value = str(data) # read data
-						                value = value[2:-1] # remove b'...'
-						                
-						                «listenStatements.get(0).body.convExpRight»
-						                 
-						def th_func_socket(action):
-							while True:
-								action()
-						
-						_thread.start_new_thread(th_func_socket, (run_server,))
-					«ENDIF»
-			'''
+			«IF listenStatements.length > 0»
+				server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				print('Socket created')				
+				
+				# Bind socket to local host and port
+				try:
+				    server.bind(('«listenStatements.get(0).ip»', «listenStatements.get(0).port»))
+				    
+				except socket.error as msg:
+				    print('Bind failed. Error Code : ' + msg + ' Message ' + str(msg))
+				    sys.exit()
+				
+				server.listen(10)
+				input = [server, ]  # a list of all connections we want to check for data
+				# each time we call select.select()
+				
+				def run_server():
+				    inputready, outputready, exceptready = select.select(input, [], [])
+				
+				    for s in inputready:  # check each socket that select() said has available data
+				
+				        if s == server:  # if select returns our server socket, there is a new
+				                        # remote socket trying to connect
+				            client, address = server.accept()
+				            # add it to the socket list so we can check it now
+				            input.append(client)
+				            print('new client added%s' % str(address))
+				
+				        else:
+				            # select has indicated that these sockets have data available to recv
+				            data = s.recv(1024)
+				            if data:
+				                value = str(data) # read data
+				                value = value[2:-1] # remove b'...'
+				                
+				                «listenStatements.get(0).body.convExpRight»
+				                 
+				def th_func_socket(action):
+					while True:
+						action()
+				
+				_thread.start_new_thread(th_func_socket, (run_server,))
+				«ENDIF»
+		'''
 	}
 
 	def String convWifiStatement(WifiStatement statement) {
