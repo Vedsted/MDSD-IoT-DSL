@@ -1,5 +1,5 @@
 
-external mean
+external mean 
 external log
 connectionConfig Wifi{
 	type:WLAN

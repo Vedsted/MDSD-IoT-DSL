@@ -12,11 +12,30 @@ DeviceDefinition:
 	'devicetype' name=ID
 	implementations+=Implementation*;
 
-
 Implementation:
 	WlanImpl | SocketListenImpl | SensorImpl | SocketConnectImpl | LoopImpl | ArrowImpl | ListDeclImpl | ListAddImpl |
 	ListClearImpl | ExternalImpl;
 
+SocketConnectImpl:
+	'socketconnection' '(' params+=ValuedImplParam (',' params+=ValuedImplParam)*')' ':'
+	body=ImplBody;
+	
+SensorImpl:
+	'sensor'  name=ID params=ImplParams?':'
+	body=ImplBody;
+	
+ImplBody:
+	{ImplBody} 
+	('import:' imports=STRING)?
+	('setup:'setup=STRING)?
+	('use:' use=STRING)?
+	;
+
+ImplParams:
+	'(' ID (',' ID)* ')';	
+	
+ValuedImplParam:
+	 name=ID '=' value=[Attribute|QualifiedName];	
 ExternalImpl:
 	'external' params=ImplParams? ':'
 	body=ImplBody;
@@ -41,13 +60,9 @@ LoopImpl:
 	'loop' params=ImplParams? ':'
 	body=ImplBody;
 
-SocketConnectImpl:
-	'socketconnection' params=ImplParams? ':'
-	body=ImplBody;
 
-SensorImpl:
-	'sensor'  name=ID params=ImplParams?':'
-	body=ImplBody;
+
+
 
 SocketListenImpl:
 	'socketlisten' params=ImplParams? ':'
@@ -57,17 +72,7 @@ WlanImpl:
 	'wlan' params=ImplParams? ':'
 	body=ImplBody;
 
-ImplBody:
-	{ImplBody} 
-	('import:' imports=STRING)?
-	('setup:'setup=STRING)?
-	('use:' use=STRING)?
-	;
 
-
-
-ImplParams:
-	'(' ID (',' ID)* ')';
 
 IoTSystem:
 	{IoTSystem}
@@ -118,19 +123,26 @@ Device:
 	'}';
 
 Program:
-	(wifiStatements=WifiStatement)?
-	connectStatements+=ConnectStatement*
-	variables+=VarOrList*
-	listenStatements+=ListenStatement*
-	loops+=Loop*;
+	{Program} topLevelCommands+= TopLevelCommand*
+	
+;
+
+TopLevelCommand:
+	WifiStatement | ConnectStatement |VarOrList |ListenStatement|Loop
+;
+
 
 ListenStatement:
-	'listen' 'on' ip=IP ':' port=INT '->' body=ExpressionRight;
+	'listen' 'on' Attribute ':' port=INT '->' body=ExpressionRight;
 
-WifiStatement:
+Attribute:
+	name=ID '=' (value=STRING|value=IP)
+;
+
+WifiStatement :
 	'setup' connectionConfig=[ConnectionConfig];
 
-ConnectStatement:
+ConnectStatement :
 	'connect' 'to' device=[Device] 'on' address=Address 'using' configuration=[ConnectionConfig];
 
 Address:
@@ -143,6 +155,7 @@ VarOrList:
 	({Variable} 'var' name=ID ('=' value=Expression)? | {PyList} 'list' name=ID);
 
 Loop:
+	{Loop}
 	('always' | 'every' timeVal=Expression timeUnit=TIMEUNIT) '{'
 	command+=Command*
 	'}';
@@ -171,7 +184,7 @@ LEDAction returns Action:
 ArrowCommand returns Command:
 	{ArrowCommand} left=ExpressionLeft '->' right=ExpressionRight;
 
-ExpressionLeft:
+ExpressionLeft returns Command:
 	ExternalOf | ReadSensor | ReadConnection | ReadVariable | Expression;
 
 Expression:
@@ -195,7 +208,7 @@ ExternalOf:
 ReadSensor:
 	'read' 'sensor' sensor=[SensorImpl|QualifiedName];
 
-ExpressionRight:
+ExpressionRight returns Command:
 	SendCommand | AddToList | ToVar | ExternalRight | Block;
 
 Block:

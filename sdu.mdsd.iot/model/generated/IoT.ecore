@@ -61,27 +61,20 @@
         containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Program">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="wifiStatements" eType="#//WifiStatement"
-        containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="connectStatements" upperBound="-1"
-        eType="#//ConnectStatement" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="variables" upperBound="-1"
-        eType="#//VarOrList" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="listenStatements" upperBound="-1"
-        eType="#//ListenStatement" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="loops" upperBound="-1"
-        eType="#//Loop" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="topLevelCommands" upperBound="-1"
+        eType="#//TopLevelCommand" containment="true"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ListenStatement">
+  <eClassifiers xsi:type="ecore:EClass" name="TopLevelCommand"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ListenStatement" eSuperTypes="#//TopLevelCommand">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="ip" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="port" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="body" eType="#//ExpressionRight"
+    <eStructuralFeatures xsi:type="ecore:EReference" name="body" eType="#//Command"
         containment="true"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="WifiStatement">
+  <eClassifiers xsi:type="ecore:EClass" name="WifiStatement" eSuperTypes="#//TopLevelCommand">
     <eStructuralFeatures xsi:type="ecore:EReference" name="connectionConfig" eType="#//ConnectionConfig"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ConnectStatement">
+  <eClassifiers xsi:type="ecore:EClass" name="ConnectStatement" eSuperTypes="#//TopLevelCommand">
     <eStructuralFeatures xsi:type="ecore:EReference" name="device" eType="#//Device"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="address" eType="#//Address"
         containment="true"/>
@@ -90,10 +83,10 @@
   <eClassifiers xsi:type="ecore:EClass" name="Address">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="VarOrList">
+  <eClassifiers xsi:type="ecore:EClass" name="VarOrList" eSuperTypes="#//TopLevelCommand">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="Loop">
+  <eClassifiers xsi:type="ecore:EClass" name="Loop" eSuperTypes="#//TopLevelCommand">
     <eStructuralFeatures xsi:type="ecore:EReference" name="timeVal" eType="#//Expression"
         containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="timeUnit" eType="#//TIMEUNIT"
@@ -104,8 +97,7 @@
   <eClassifiers xsi:type="ecore:EClass" name="TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="Command"/>
   <eClassifiers xsi:type="ecore:EClass" name="Action" eSuperTypes="#//Command"/>
-  <eClassifiers xsi:type="ecore:EClass" name="ExpressionLeft"/>
-  <eClassifiers xsi:type="ecore:EClass" name="Expression" eSuperTypes="#//ExpressionLeft"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Expression" eSuperTypes="#//Command"/>
   <eClassifiers xsi:type="ecore:EClass" name="BoolExpression" eSuperTypes="#//Expression">
     <eStructuralFeatures xsi:type="ecore:EReference" name="value" eType="#//Bool"
         containment="true"/>
@@ -113,25 +105,25 @@
   <eClassifiers xsi:type="ecore:EClass" name="IntExpression" eSuperTypes="#//Expression">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ReadVariable" eSuperTypes="#//ExpressionLeft">
+  <eClassifiers xsi:type="ecore:EClass" name="ReadVariable" eSuperTypes="#//Command">
     <eStructuralFeatures xsi:type="ecore:EReference" name="value" eType="#//Variable"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ReadConnection" eSuperTypes="#//ExpressionLeft">
+  <eClassifiers xsi:type="ecore:EClass" name="ReadConnection" eSuperTypes="#//Command">
     <eStructuralFeatures xsi:type="ecore:EReference" name="source" eType="#//Device"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ExternalOf" eSuperTypes="#//ExpressionLeft">
+  <eClassifiers xsi:type="ecore:EClass" name="ExternalOf" eSuperTypes="#//Command">
     <eStructuralFeatures xsi:type="ecore:EReference" name="method" eType="#//ExternalDeclaration"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="target" eType="#//VarOrList"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ReadSensor" eSuperTypes="#//ExpressionLeft">
+  <eClassifiers xsi:type="ecore:EClass" name="ReadSensor" eSuperTypes="#//Command">
     <eStructuralFeatures xsi:type="ecore:EReference" name="sensor" eType="#//SensorImpl"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ExpressionRight"/>
-  <eClassifiers xsi:type="ecore:EClass" name="Block" eSuperTypes="#//ExpressionRight">
+  <eClassifiers xsi:type="ecore:EClass" name="Block" eSuperTypes="#//Command">
     <eStructuralFeatures xsi:type="ecore:EReference" name="commands" upperBound="-1"
         eType="#//Command" containment="true"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ExternalRight" eSuperTypes="#//ExpressionRight">
+  <eClassifiers xsi:type="ecore:EClass" name="ExpressionRight" eSuperTypes="#//Command"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ExternalRight" eSuperTypes="#//Command">
     <eStructuralFeatures xsi:type="ecore:EReference" name="method" eType="#//ExternalDeclaration"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ElseBlock">
@@ -168,9 +160,9 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="state" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ArrowCommand" eSuperTypes="#//Command">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="left" eType="#//ExpressionLeft"
+    <eStructuralFeatures xsi:type="ecore:EReference" name="left" eType="#//Command"
         containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="right" eType="#//ExpressionRight"
+    <eStructuralFeatures xsi:type="ecore:EReference" name="right" eType="#//Command"
         containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="VarAccess" eSuperTypes="#//Expression">
