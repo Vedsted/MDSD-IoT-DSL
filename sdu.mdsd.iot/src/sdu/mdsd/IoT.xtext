@@ -17,7 +17,7 @@ Implementation:
 	ListClearImpl | ExternalImpl;
 
 SocketConnectImpl:
-	'socketconnection' '(' params+=ValuedImplParam (',' params+=ValuedImplParam)*')' ':'
+	'socketconnection' params=ImplParams? ':'
 	body=ImplBody;
 	
 SensorImpl:
@@ -34,8 +34,6 @@ ImplBody:
 ImplParams:
 	'(' ID (',' ID)* ')';	
 	
-ValuedImplParam:
-	 name=ID '=' value=[Attribute|QualifiedName];	
 ExternalImpl:
 	'external' params=ImplParams? ':'
 	body=ImplBody;
@@ -133,11 +131,8 @@ TopLevelCommand:
 
 
 ListenStatement:
-	'listen' 'on' Attribute ':' port=INT '->' body=ExpressionRight;
+	'listen' 'on' ip=IP ':' port=INT '->' body=ExpressionRight;
 
-Attribute:
-	name=ID '=' (value=STRING|value=IP)
-;
 
 WifiStatement :
 	'setup' connectionConfig=[ConnectionConfig];

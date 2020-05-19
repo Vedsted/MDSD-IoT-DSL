@@ -17,23 +17,23 @@
     <eStructuralFeatures xsi:type="ecore:EReference" name="body" eType="#//ImplBody"
         containment="true"/>
   </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SocketConnectImpl" eSuperTypes="#//Implementation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="SensorImpl" eSuperTypes="#//Implementation">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ImplBody">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="imports" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="setup" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="use" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ExternalImpl" eSuperTypes="#//Implementation"/>
   <eClassifiers xsi:type="ecore:EClass" name="ListDeclImpl" eSuperTypes="#//Implementation"/>
   <eClassifiers xsi:type="ecore:EClass" name="ListClearImpl" eSuperTypes="#//Implementation"/>
   <eClassifiers xsi:type="ecore:EClass" name="ListAddImpl" eSuperTypes="#//Implementation"/>
   <eClassifiers xsi:type="ecore:EClass" name="ArrowImpl" eSuperTypes="#//Implementation"/>
   <eClassifiers xsi:type="ecore:EClass" name="LoopImpl" eSuperTypes="#//Implementation"/>
-  <eClassifiers xsi:type="ecore:EClass" name="SocketConnectImpl" eSuperTypes="#//Implementation"/>
-  <eClassifiers xsi:type="ecore:EClass" name="SensorImpl" eSuperTypes="#//Implementation">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="SocketListenImpl" eSuperTypes="#//Implementation"/>
   <eClassifiers xsi:type="ecore:EClass" name="WlanImpl" eSuperTypes="#//Implementation"/>
-  <eClassifiers xsi:type="ecore:EClass" name="ImplBody">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="imports" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="setup" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="use" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="IoTSystem">
     <eStructuralFeatures xsi:type="ecore:EReference" name="externalDeclarations" upperBound="-1"
         eType="#//ExternalDeclaration" containment="true"/>
