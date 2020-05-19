@@ -1,4 +1,4 @@
-devicetype iot 
+devicetype iot  
 	loop (TSECONDS, NAME, COMMANDS):
 		use:
 "def th_func{{NAME}}(action):
@@ -21,7 +21,7 @@ _thread.start_new_thread(th_func{{NAME}}, (loop{{NAME}},))"
 		use:
 "{{NAME}}.append(value)"
 	
-	external (NAME, TARGETNAME):
+	externalf (NAME, TARGETNAME):
 		import:
 "import externals"
 		use:
@@ -53,7 +53,7 @@ for net in nets:
 		print('WLAN connection succeeded!')
 		print(wlan.ifconfig()) # Print the connection settings
 		break"
-	sensor TEMPERATURE :
+	sensor(NAME):
 		import:
 "from machine import ADC, Pin" 
 		setup:

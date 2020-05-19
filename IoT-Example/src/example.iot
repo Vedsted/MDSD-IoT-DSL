@@ -1,31 +1,42 @@
-
-external mean 
+external mean  
 external log
 connectionConfig Wifi{
 	type:WLAN
 	"ssid":"Network2GHz"
 	"password": "kalenderlys"
-	 
 }
 
-iot device Cup {
-	setup Wifi
-	list temps
-	
-	every 10 MILLISECONDS{
-		read sensor iot.TEMPERATURE -> add to temps
-	}
-	
-	every 100 MILLISECONDS {
-		mean of temps ->  send to Server
-		clear temps
-	}
-	
+iot.* device Cup {
+	wlan (SSID="network2", PASSWORD="kalenderlys")
+	listdeclare(NAME="temps")
+
+	loop(TSECONDS=1,NAME=1,COMMANDS=
+		arrow(
+			LEFT=sensor(NAME="TEMPERATURE"),
+			RIGHT=listaddto(NAME="temps"),
+			UUID="anID0"
+		)
+	)
+
+	loop(TSECONDS=1,NAME=1,COMMANDS=
+		arrow(
+			LEFT=externalf(NAME="mean",TARGETNAME="temps"),
+			RIGHT=socketconnection(
+				IP="192.168.0.16", 
+				PORT=8000,
+				TARGET_DEVICE="Server"
+			),
+			UUID="anID2"
+		) 
+		,
+		COMMANDS=listclear(NAME="temps")
+	)
 }
 
-
-controller device Server{ 
-	
-	listen on 192.168.0.16:8000 -> log of value
-	
+controller.* device Server{ 
+	socketlisten(
+		IP="192.168.0.16", 
+		PORT=8000, 
+		COMMANDS=externalr(NAME="log")
+	)
 }

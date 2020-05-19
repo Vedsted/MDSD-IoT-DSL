@@ -3,6 +3,12 @@
  */
 package sdu.mdsd.scoping
 
+import org.eclipse.emf.ecore.EObject
+import org.eclipse.emf.ecore.EReference
+import sdu.mdsd.ioT.IoTPackage
+import sdu.mdsd.ioT.*
+import org.eclipse.xtext.scoping.Scopes
+import org.eclipse.xtext.scoping.IScope
 
 /**
  * This class contains custom scoping description.
@@ -11,5 +17,26 @@ package sdu.mdsd.scoping
  * on how and when to use it.
  */
 class IoTScopeProvider extends AbstractIoTScopeProvider {
+
+override getScope(EObject context, EReference reference) {
+	if (reference == IoTPackage.eINSTANCE.argument_Param) {
+		scopeForParamRef(context)
+
+	} else {
+		super.getScope(context, reference)
+	}
+}
+
+def protected IScope scopeForParamRef(EObject context) {
+	val container = context.eContainer
+	return switch (container) {
+		Command:
+			Scopes.scopeFor(     
+				   container.template.params)
+		
+		default:
+			scopeForParamRef(container)
+	}
+}
 
 }

@@ -1,5 +1,5 @@
 devicetype controller
-	external (NAME):
+	externalr (NAME):
 		use:
 "externals.{{NAME}}(value)"
 	socketlisten (IP, PORT, COMMANDS):

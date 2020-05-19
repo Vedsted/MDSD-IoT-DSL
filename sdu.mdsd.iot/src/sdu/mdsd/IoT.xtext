@@ -13,16 +13,14 @@ DeviceDefinition:
 	implementations+=Implementation*;
 
 Implementation:
-	WlanImpl | SocketListenImpl | SensorImpl | SocketConnectImpl | LoopImpl | ArrowImpl | ListDeclImpl | ListAddImpl |
-	ListClearImpl | ExternalImpl;
+	name=ID '(' params+=Parameter ( ',' params+=Parameter)* ')' ':'
+	body=ImplBody
 
-SocketConnectImpl:
-	'socketconnection' '(' params+=ValuedImplParam (',' params+=ValuedImplParam)*')' ':'
-	body=ImplBody;
-	
-SensorImpl:
-	'sensor'  name=ID params=ImplParams?':'
-	body=ImplBody;
+;
+
+Parameter:
+	name=ID (isArray?='[]')?
+;
 	
 ImplBody:
 	{ImplBody} 
@@ -31,46 +29,7 @@ ImplBody:
 	('use:' use=STRING)?
 	;
 
-ImplParams:
-	'(' ID (',' ID)* ')';	
-	
-ValuedImplParam:
-	 name=ID '=' value=[Attribute|QualifiedName];	
-ExternalImpl:
-	'external' params=ImplParams? ':'
-	body=ImplBody;
 
-ListDeclImpl:
-	'listdeclare' params=ImplParams? ':'
-	body=ImplBody;
-
-ListClearImpl:
-	'listclear' params=ImplParams? ':'
-	body=ImplBody;
-
-ListAddImpl:
-	'listaddto' params=ImplParams? ':'
-	body=ImplBody;
-
-ArrowImpl:
-	'arrow' params=ImplParams? ':'
-	body=ImplBody;
-
-LoopImpl:
-	'loop' params=ImplParams? ':'
-	body=ImplBody;
-
-
-
-
-
-SocketListenImpl:
-	'socketlisten' params=ImplParams? ':'
-	body=ImplBody;
-
-WlanImpl:
-	'wlan' params=ImplParams? ':'
-	body=ImplBody;
 
 
 
@@ -118,9 +77,14 @@ Declaration:
  * Device 
  */
 Device:
-	deviceType=[DeviceDefinition] 'device' name=ID '{'
+	importedNamespace=QualifiedNameWithWildCard 'device' name=ID '{'
 	program=Program
 	'}';
+
+QualifiedNameWithWildCard:
+	
+QualifiedName '.*'? 
+;
 
 Program:
 	{Program} topLevelCommands+= TopLevelCommand*
@@ -128,139 +92,26 @@ Program:
 ;
 
 TopLevelCommand:
-	WifiStatement | ConnectStatement |VarOrList |ListenStatement|Loop
+	Command | Number | StringValue
+;
+
+StringValue:
+	value=STRING
+;
+
+Number:
+	value=INT
+;
+
+Argument:
+	param=[Parameter] '=' (value=TopLevelCommand)
 ;
 
 
-ListenStatement:
-	'listen' 'on' Attribute ':' port=INT '->' body=ExpressionRight;
-
-Attribute:
-	name=ID '=' (value=STRING|value=IP)
-;
-
-WifiStatement :
-	'setup' connectionConfig=[ConnectionConfig];
-
-ConnectStatement :
-	'connect' 'to' device=[Device] 'on' address=Address 'using' configuration=[ConnectionConfig];
-
-Address:
-	{IpAddress} value=IP |
-	{WindowsSerialAddress} value=WINDOWS_SERIAL |
-	{UnixSerialAddress} value=STRING // TODO: validation
-;
-
-VarOrList:
-	({Variable} 'var' name=ID ('=' value=Expression)? | {PyList} 'list' name=ID);
-
-Loop:
-	{Loop}
-	('always' | 'every' timeVal=Expression timeUnit=TIMEUNIT) '{'
-	command+=Command*
-	'}';
-
-TIMEUNIT:
-	{MILLISECONDS} 'MILLISECONDS' |
-	{SECONDS} 'SECONDS' |
-	{MINUTES} 'MINUTES' |
-	{HOURS} 'HOURS' |
-	{DAYS} 'DAYS' |
-	{WEEKS} 'WEEKS';
 
 Command:
-	Action | ArrowCommand | IfStatement;
+	template=[Implementation] '('args+=Argument (',' args+=Argument )* ')'
+;
 
-Action returns Command:
-	ClearListAction |
-	LEDAction;
 
-ClearListAction returns Action:
-	{ClearListAction} 'clear' list=[PyList];
-
-LEDAction returns Action:
-	{LEDAction} 'LED' state=('ON' | 'OFF');
-
-ArrowCommand returns Command:
-	{ArrowCommand} left=ExpressionLeft '->' right=ExpressionRight;
-
-ExpressionLeft returns Command:
-	ExternalOf | ReadSensor | ReadConnection | ReadVariable | Expression;
-
-Expression:
-	BoolExpression | IntExpression | {VarAccess} variableName=[VarOrList];
-
-BoolExpression:
-	value=Bool;
-
-IntExpression:
-	value=INT;
-
-ReadVariable:
-	'read' 'var' value=[Variable];
-
-ReadConnection:
-	'read' 'from' source=[Device];
-
-ExternalOf:
-	method=[ExternalDeclaration] 'of' target=[VarOrList];
-
-ReadSensor:
-	'read' 'sensor' sensor=[SensorImpl|QualifiedName];
-
-ExpressionRight returns Command:
-	SendCommand | AddToList | ToVar | ExternalRight | Block;
-
-Block:
-	'{' commands+=Command+ '}';
-
-ToVar returns ExpressionRight:
-	{ToVar} 'to' variable=[Variable];
-
-AddToList returns ExpressionRight:
-	{AddToList} 'add' 'to' list=[PyList];
-
-ExternalRight:
-	method=[ExternalDeclaration] 'of' 'value';
-
-SendCommand returns ExpressionRight:
-	{SendCommand} 'send' 'to' target=[Device];
-
-IfStatement returns Command:
-	{IfStatement} 'if' condition=Comparison '{' commands+=Command+ '}' (elseBlock=ElseBlock)?;
-
-ElseBlock:
-	{ElseBlock} 'else' '{' commands+=Command+ '}';
-
-Comparison returns Comparison:
-	OR;
-
-OR returns Comparison:
-	AND ({OR.left=current} ('||' | 'OR') right=AND)*;
-
-AND returns Comparison:
-	EQL ({AND.left=current} ('&&' | 'AND') right=EQL)*;
-
-EQL returns Comparison:
-	Item ({EQL.left=current} op=ComparisonOp right=Item)?;
-
-Item returns Comparison:
-	Parenthasis |
-	{ItemVariable} value=[Variable] |
-	{ItemInt} value=INT |
-	{ItemBool} value=Bool;
-
-Parenthasis returns Comparison:
-	'(' Comparison ')';
-
-ComparisonOp:
-	{GT} op='>' |
-	{LT} op='<' |
-	{LE} op='<=' |
-	{GE} op='>=' |
-	{EQ} op='==' |
-	{NE} op='!=';
-
-Bool:
-	{True} ('TRUE' | 'true') | {False} ('FALSE' | 'false');
 
