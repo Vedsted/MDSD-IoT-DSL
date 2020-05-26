@@ -1,23 +1,23 @@
-devicetype controller "controller.py" :
-"{{IMPORTS}}
+devicetype controller "controller.py" : 
+"{{IMPORTS}} 
 
 {{SETUP}}
 
 {{PROGRAM}}"
-	external (NAME):
+	external (NAME=NAME):
 		use:
 "externals.{{NAME}}(value)"
-	socketlisten (IP, PORT, COMMANDS):
+	socketlisten (IP=IP, PORT=PORT, COMMANDS=COMMANDS):
 		import:
 "import socket
-import select"
-		setup:
+import select {{IPe}}"     
+		setup: 
 "server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print('Socket created')				
 
 # Bind socket to local host and port
 try:
-    server.bind((‘{{IP}}’, {{PORT}}))
+    server.bind((‘{{IP}}’, {{PORT2}}))
 except socket.error as msg:
     print('Bind failed. Error Code : ' + msg + ' Message ' + str(msg))
     sys.exit()

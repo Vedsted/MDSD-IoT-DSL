@@ -3,6 +3,14 @@
  */
 package sdu.mdsd.validation
 
+import sdu.mdsd.ioT.Implementation
+import org.eclipse.emf.common.util.EList
+import sdu.mdsd.ioT.ImplParam
+import org.eclipse.xtext.validation.Check
+import java.util.regex.Pattern
+import java.util.regex.Matcher
+import sdu.mdsd.ioT.IoTPackage
+import sdu.mdsd.ioT.ImplBody
 
 /**
  * This class contains custom validation rules. 
@@ -11,15 +19,32 @@ package sdu.mdsd.validation
  */
 class IoTValidator extends AbstractIoTValidator {
 	
-//	public static val INVALID_NAME = 'invalidName'
-//
-//	@Check
-//	def checkGreetingStartsWithCapital(Greeting greeting) {
-//		if (!Character.isUpperCase(greeting.name.charAt(0))) {
-//			warning('Name should start with a capital', 
-//					IoTPackage.Literals.GREETING__NAME,
-//					INVALID_NAME)
-//		}
-//	}
+	public static val INVALID_NAME = 'invalidName'
+
+	@Check
+	def checkTemplateCodeStringParamNamesExist(ImplBody template) {
+		var code = template.imports
+		var parentObject = template.eContainer
+		var params = (parentObject as Implementation)?.params?.params
+		if(params !== null){
+			
+		val pattern = "\\{\\{\\w*\\}\\}";
+		var regex = Pattern.compile(pattern);
+		var match = regex.matcher(code);
+
+		while (match.find()) {
+			val parameter = code.substring(match.start()+2, match.end()-2)
+			if(params.filter[item | item.name.equals(parameter)].isEmpty){
+				val atts = IoTPackage.eINSTANCE.implBody_Imports;
+				
+				error('''Parameter «parameter» not declared''', atts)
+			
+			}
+		}
+		} 
+		
+	}
+	
+	
 	
 }

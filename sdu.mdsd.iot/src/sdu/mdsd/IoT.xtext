@@ -8,6 +8,7 @@ generate ioT "http://www.mdsd.sdu/IoT"
 Model:
 	deviceTypes+=DeviceDefinition*
 	system=IoTSystem;
+	
 
 DeviceDefinition:
 	'devicetype' name=ID fileName=STRING ':'
@@ -33,9 +34,12 @@ ImplBody:
 	('use:' use=STRING)?;
 
 ImplParams:
-	'(' ID (',' ID)* ')';
-	
+	'(' params+=ImplParam (',' params+=ImplParam)* ')';
 
+ImplParam:
+	meaning=ID '=' name=ID
+;
+	
 
 ExternalImpl:
 	'external' params=ImplParams? ':'

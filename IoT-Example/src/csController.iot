@@ -1,18 +1,17 @@
 devicetype csController "program.cs":
-"
-{{IMPORTS}}
+"{{IMPORTS}}
 namespace CsharpController{
-    class Program    {
+    class Program{
         static void Main(string[] args)        {
 		{{SETUP}}
 		{{PROGRAM}}
        }}}
 "
-external (NAME):
+external (NAME=NAME):
 	use:
 "Externals.{{NAME}}(value);"
 
-socketlisten (IP, PORT, COMMANDS):
+socketlisten (IP=IP, PORT=PORT, COMMANDS=COMMANDS):
 		import:
 "using System;
 using System.Collections.Generic;

@@ -200,7 +200,7 @@ class IoTGenerator extends AbstractGenerator {
 			var setup = impl.body.setup;
 			if (setup !== null) {
 
-				var setUpCode = setup.insertParameters(impl.params, paramsMap)
+				var setUpCode = setup.insertParameters(impl.params?.params, paramsMap)
 				usedSetups.add(setUpCode);
 			}
 		}
@@ -215,7 +215,7 @@ class IoTGenerator extends AbstractGenerator {
 			var use = impl.body.use;
 			if (use !== null) {
 
-				var useCode = use.insertParameters(impl.params, paramsMap)
+				var useCode = use.insertParameters(impl.params?.params, paramsMap)
 				sb.append(useCode)
 			}
 		}
@@ -223,16 +223,17 @@ class IoTGenerator extends AbstractGenerator {
 
 	}
 
-	def insertParameters(String setup, String params, Map<String, String> paramsMap) {
+	def insertParameters(String setup, List<ImplParam> params, Map<String, String> paramsMap) {
 		var codeString = setup
 		if (codeString === null) {
 			throw new Exception("Why is the code string null")
 		}
 		if (params === null)
 			return codeString
-		var paramList = params.replace('(', '').replace(')', '').split(',').map[trim()];
-		for (param : paramList) {
-			var newValue = paramsMap.get(param);
+		//var paramList = params.replace('(', '').replace(')', '').split(',').map[trim()];
+		for (paramObj : params) {
+			var param = paramObj.name
+			var newValue = paramsMap.get(paramObj.meaning);
 			if (newValue === null) {
 				throw new Exception('''«param» was null''')
 			}
