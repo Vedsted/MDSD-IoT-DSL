@@ -32,7 +32,7 @@ class IoTGenerator extends AbstractGenerator {
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		// var model = resource.allContents.filter(Model).toList
 		for (dev : resource.allContents.filter(Device).toList) {
-			fsa.generateFile('''«dev.name»/main.py''', dev.convertDevice)
+			fsa.generateFile('''«dev.name»/«dev.deviceType.fileName»''', dev.convertDevice)
 		}
 	}
 
@@ -42,15 +42,19 @@ class IoTGenerator extends AbstractGenerator {
 		var importString = buildImports(device)
 		var programString = buildProgram(device)
 
-		var string = '''
-			«importString»
-			
-			«buildSetups()»
-			
-			«programString»
-		'''
+//		var string = '''
+//			«importString»
+//			
+//			«buildSetups()»
+//			
+//			«programString»
+//		'''
 
-		return string;
+		var string =  device.deviceType.body;
+		string = string.cleverReplace("{{IMPORTS}}", importString)
+		string = string.cleverReplace("{{SETUP}}", buildSetups())
+		string = string.cleverReplace("{{PROGRAM}}", programString)
+		return string
 	}
 
 	def buildImports(Device device) {

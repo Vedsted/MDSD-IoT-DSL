@@ -1,6 +1,6 @@
 
 external mean 
-external log
+external log 
 connectionConfig Wifi{
 	type:WLAN
 	"ssid":"Network2GHz"
@@ -10,7 +10,7 @@ connectionConfig Wifi{
 
 iot device Cup {
 	setup Wifi
-	list temps
+	list temps 
 	
 	every 10 MILLISECONDS{
 		read sensor iot.TEMPERATURE -> add to temps
@@ -24,7 +24,7 @@ iot device Cup {
 }
 
 
-controller device Server{ 
+csController device Server{ 
 	
 	listen on 192.168.0.16:8000 -> log of value
 	

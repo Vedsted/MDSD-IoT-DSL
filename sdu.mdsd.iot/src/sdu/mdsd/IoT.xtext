@@ -1,15 +1,17 @@
 grammar sdu.mdsd.IoT with org.eclipse.xtext.common.Terminals
 
 import "http://www.eclipse.org/emf/2002/Ecore" as ecore
-
 generate ioT "http://www.mdsd.sdu/IoT"
+
+
 
 Model:
 	deviceTypes+=DeviceDefinition*
 	system=IoTSystem;
 
 DeviceDefinition:
-	'devicetype' name=ID
+	'devicetype' name=ID fileName=STRING ':'
+	body=STRING
 	implementations+=Implementation*;
 
 Implementation:
@@ -19,21 +21,22 @@ Implementation:
 SocketConnectImpl:
 	'socketconnection' params=ImplParams? ':'
 	body=ImplBody;
-	
+
 SensorImpl:
-	'sensor'  name=ID params=ImplParams?':'
+	'sensor' name=ID params=ImplParams? ':'
 	body=ImplBody;
-	
+
 ImplBody:
-	{ImplBody} 
+	{ImplBody}
 	('import:' imports=STRING)?
-	('setup:'setup=STRING)?
-	('use:' use=STRING)?
-	;
+	('setup:' setup=STRING)?
+	('use:' use=STRING)?;
 
 ImplParams:
-	'(' ID (',' ID)* ')';	
+	'(' ID (',' ID)* ')';
 	
+
+
 ExternalImpl:
 	'external' params=ImplParams? ':'
 	body=ImplBody;
@@ -58,10 +61,6 @@ LoopImpl:
 	'loop' params=ImplParams? ':'
 	body=ImplBody;
 
-
-
-
-
 SocketListenImpl:
 	'socketlisten' params=ImplParams? ':'
 	body=ImplBody;
@@ -70,15 +69,14 @@ WlanImpl:
 	'wlan' params=ImplParams? ':'
 	body=ImplBody;
 
-
-
 IoTSystem:
 	{IoTSystem}
 	externalDeclarations+=ExternalDeclaration*
 	configs+=Config*
 	devices+=Device*;
 
-QualifiedName: ID ('.' ID)* ;
+QualifiedName:
+	ID ('.' ID)*;
 
 terminal IP returns ecore::EString:
 	INT '.' INT '.' INT '.' INT; // IP
@@ -121,23 +119,18 @@ Device:
 	'}';
 
 Program:
-	{Program} topLevelCommands+= TopLevelCommand*
-	
-;
+	{Program} topLevelCommands+=TopLevelCommand*;
 
 TopLevelCommand:
-	WifiStatement | ConnectStatement |VarOrList |ListenStatement|Loop
-;
-
+	WifiStatement | ConnectStatement | VarOrList | ListenStatement | Loop;
 
 ListenStatement:
 	'listen' 'on' ip=IP ':' port=INT '->' body=ExpressionRight;
 
-
-WifiStatement :
+WifiStatement:
 	'setup' connectionConfig=[ConnectionConfig];
 
-ConnectStatement :
+ConnectStatement:
 	'connect' 'to' device=[Device] 'on' address=Address 'using' configuration=[ConnectionConfig];
 
 Address:

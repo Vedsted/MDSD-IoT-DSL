@@ -12,6 +12,8 @@
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//DeviceDefinition">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//DeviceDefinition/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//DeviceDefinition/fileName"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//DeviceDefinition/body"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//DeviceDefinition/implementations"/>
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//Implementation">

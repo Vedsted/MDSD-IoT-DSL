@@ -1,4 +1,21 @@
-devicetype iot 
+devicetype iot "main.py": 
+"{{IMPORTS}}
+
+{{SETUP}}
+
+{{PROGRAM}}
+"
+sensor TEMPERATURE :
+		import:
+"from machine import ADC, Pin" 
+		setup:
+"p_out = Pin('P19', mode=Pin.OUT)
+p_out.value(1)
+adc = ADC()             # create an ADC object
+apin = adc.channel(pin='P16', attn=2)   # create an analog pin on P16"
+		use:
+"temperature = apin()
+return temperature"
 	loop (TSECONDS, NAME, COMMANDS):
 		use:
 "def th_func{{NAME}}(action):
@@ -71,6 +88,6 @@ return temperature"
 		setup:
 "socket{{TARGET_DEVICE}} = socket.socket()
 socket{{TARGET_DEVICE}}.setblocking(True)
-socket{{TARGET_DEVICE}}.connect(('{{IP}}’, {{PORT}}))"
+socket{{TARGET_DEVICE}}.connect(('{{IP}}', {{PORT}}))"
 		use:
 'socket{{TARGET_DEVICE}}.send(bytes(str(value), "utf8"))'

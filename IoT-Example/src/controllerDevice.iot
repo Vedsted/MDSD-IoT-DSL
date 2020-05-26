@@ -1,4 +1,9 @@
-devicetype controller
+devicetype controller "controller.py" :
+"{{IMPORTS}}
+
+{{SETUP}}
+
+{{PROGRAM}}"
 	external (NAME):
 		use:
 "externals.{{NAME}}(value)"
