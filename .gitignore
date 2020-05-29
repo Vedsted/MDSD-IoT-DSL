@@ -16,3 +16,5 @@ sdu.mdsd.iot/xtend-gen/
 CsharpController/CsharpController/.vs/
 
 CsharpController/CsharpController/CsharpController/obj/
+
+sdu.mdsd.iot/model/generated/
