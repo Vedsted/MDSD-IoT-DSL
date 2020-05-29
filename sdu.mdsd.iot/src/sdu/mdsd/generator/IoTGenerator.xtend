@@ -51,7 +51,7 @@ class IoTGenerator extends AbstractGenerator {
 
 	def buildImports(Device device) {
 		// TODO ideally only import things used in the program, but you know
-		var imports = device.deviceType.implementations.filter[body.imports !== null].map[body.imports].toList
+		var imports = device.deviceType.templates.filter[body.imports !== null].map[body.imports].toList
 		var strings = new ArrayList<String>();
 		for (import : imports) {
 			// Split on new line to get each import as a separate line.
@@ -74,7 +74,7 @@ class IoTGenerator extends AbstractGenerator {
 	def buildProgram(Device device) {
 		var sb = new StringBuilder()
 		var program = device.program
-		for (cmd : program.topLevelCommands) {
+		for (cmd : program.expressions) {
 			sb.append(cmd.generateCode)
 			sb.append("\n")
 		}
@@ -83,7 +83,7 @@ class IoTGenerator extends AbstractGenerator {
 
 	var loopCount = 0;
 
-	def String generateCode(TopLevelCommand command) {
+	def String generateCode(Expression command) {
 		switch(command){
 			Number: return command.value.toString()
 			StringValue: return command.value

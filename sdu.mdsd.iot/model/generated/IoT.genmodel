@@ -14,21 +14,21 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//DeviceDefinition/name"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//DeviceDefinition/fileName"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//DeviceDefinition/body"/>
-      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//DeviceDefinition/implementations"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//DeviceDefinition/templates"/>
     </genClasses>
-    <genClasses ecoreClass="IoT.ecore#//Implementation">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Implementation/name"/>
-      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Implementation/params"/>
-      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Implementation/body"/>
+    <genClasses ecoreClass="IoT.ecore#//Template">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Template/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Template/params"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Template/body"/>
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//Parameter">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Parameter/name"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Parameter/isArray"/>
     </genClasses>
-    <genClasses ecoreClass="IoT.ecore#//ImplBody">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//ImplBody/imports"/>
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//ImplBody/setup"/>
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//ImplBody/use"/>
+    <genClasses ecoreClass="IoT.ecore#//TemplBody">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//TemplBody/imports"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//TemplBody/setup"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//TemplBody/use"/>
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//IoTSystem">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//IoTSystem/devices"/>
@@ -39,9 +39,9 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Device/program"/>
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//Program">
-      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Program/topLevelCommands"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Program/expressions"/>
     </genClasses>
-    <genClasses ecoreClass="IoT.ecore#//TopLevelCommand"/>
+    <genClasses ecoreClass="IoT.ecore#//Expression"/>
     <genClasses ecoreClass="IoT.ecore#//StringValue">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//StringValue/value"/>
     </genClasses>

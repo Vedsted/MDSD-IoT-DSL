@@ -33,7 +33,7 @@ class IoTScopeProvider extends AbstractIoTScopeProvider {
 		val container = context.eContainer
 		return switch (container) {
 			Device:
-				Scopes.scopeFor(container.deviceType.implementations)
+				Scopes.scopeFor(container.deviceType.templates)
 			default:
 				scopeForCmdTemplate(container)
 		}

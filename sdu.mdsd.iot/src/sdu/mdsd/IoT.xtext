@@ -1,66 +1,34 @@
 grammar sdu.mdsd.IoT with org.eclipse.xtext.common.Terminals
-
 import "http://www.eclipse.org/emf/2002/Ecore" as ecore
-
 generate ioT "http://www.mdsd.sdu/IoT"
-
 Model:
 	deviceTypes+=DeviceDefinition*
 	system=IoTSystem?;
-
 DeviceDefinition:
 	'devicetype' name=ID fileName=STRING ':'
 	body=STRING
-	implementations+=Implementation*;
-
-Implementation:
-	name=ID '(' params+=Parameter ( ',' params+=Parameter)* ')' ':'
-	body=ImplBody
-;
-
-Parameter:
-	name=ID (isArray?='[]')?
-;
-	
-ImplBody:
-	{ImplBody} 
+	templates+=Template*;
+Template:
+	name=ID '(' params+=Parameter 
+		( ',' params+=Parameter)* ')' ':'
+	body=TemplBody;
+Parameter:	name=ID (isArray?='[]')?;
+TemplBody: {TemplBody} 
 	('import:' imports=STRING)?
 	('setup:'setup=STRING)?
-	('use:' use=STRING)?
-	;
-
-IoTSystem:
-	devices+=Device+;
-
-Device:
-	deviceType=[DeviceDefinition] 'device' name=ID '{'
-	program=Program
-	'}';
-
-Program:
-	{Program} topLevelCommands+= TopLevelCommand*
-	
-;
-
-TopLevelCommand:
-	Command | Number | StringValue
-;
-
-StringValue:
-	value=STRING
-;
-
-Number:
-	value=INT
-;
-
-Argument:
-	param=[Parameter] '=' (value=TopLevelCommand | '[' values+=TopLevelCommand (',' values+=TopLevelCommand)* ']')
-;
-
-Command:
-	template=[Implementation] '('args+=Argument (',' args+=Argument )* ')'
-;
+	('use:' use=STRING)?;
+IoTSystem:	devices+=Device+;
+Device:	
+	deviceType=[DeviceDefinition] 'device' name=ID
+	'{'	program=Program	'}';
+Program:	{Program} expressions+= Expression*;
+Expression:	Command | Number | StringValue;
+StringValue:value=STRING;
+Number:	value=INT;
+Argument:param=[Parameter] '=' (value=Expression 
+	| '[' values+=Expression (',' values+=Expression)*
+	  ']');
+Command:template=[Template] '('args+=Argument (',' args+=Argument )* ')';
 
 
 
