@@ -12,6 +12,8 @@
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//DeviceDefinition">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//DeviceDefinition/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//DeviceDefinition/fileName"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//DeviceDefinition/body"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//DeviceDefinition/implementations"/>
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//Implementation">
@@ -29,23 +31,10 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//ImplBody/use"/>
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//IoTSystem">
-      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//IoTSystem/externalDeclarations"/>
-      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//IoTSystem/configs"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//IoTSystem/devices"/>
     </genClasses>
-    <genClasses ecoreClass="IoT.ecore#//ExternalDeclaration">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//ExternalDeclaration/name"/>
-    </genClasses>
-    <genClasses ecoreClass="IoT.ecore#//Config">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Config/name"/>
-      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Config/declarations"/>
-    </genClasses>
-    <genClasses ecoreClass="IoT.ecore#//Declaration">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Declaration/key"/>
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Declaration/value"/>
-    </genClasses>
     <genClasses ecoreClass="IoT.ecore#//Device">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Device/importedNamespace"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference IoT.ecore#//Device/deviceType"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Device/name"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Device/program"/>
     </genClasses>
@@ -62,14 +51,11 @@
     <genClasses ecoreClass="IoT.ecore#//Argument">
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference IoT.ecore#//Argument/param"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Argument/value"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Argument/values"/>
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//Command">
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference IoT.ecore#//Command/template"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Command/args"/>
-    </genClasses>
-    <genClasses ecoreClass="IoT.ecore#//DeviceConfig"/>
-    <genClasses ecoreClass="IoT.ecore#//ConnectionConfig">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//ConnectionConfig/type"/>
     </genClasses>
   </genPackages>
 </genmodel:GenModel>

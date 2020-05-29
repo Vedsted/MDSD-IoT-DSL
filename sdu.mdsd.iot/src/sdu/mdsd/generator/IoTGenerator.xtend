@@ -32,39 +32,35 @@ class IoTGenerator extends AbstractGenerator {
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		// var model = resource.allContents.filter(Model).toList
 		for (dev : resource.allContents.filter(Device).toList) {
-			fsa.generateFile('''«dev.name»/main.py''', dev.convertDevice)
+			fsa.generateFile('''«dev.name»/«dev.deviceType.fileName»''', dev.convertDevice)
 		}
 	}
 
 	def convertDevice(Device device) {
 		currentDevice = device
 		usedSetups = new ArrayList<String>()
-//		var importString = buildImports(device)
+		var importString = buildImports(device)
 		var programString = buildProgram(device)
 
-		var string = '''
-«««			«importString»
-			
-			«buildSetups()»
-			
-			«programString»
-		'''
-
-		return string;
+		var string =  device.deviceType.body;
+		string = string.cleverReplace("{{IMPORTS}}", importString)
+		string = string.cleverReplace("{{SETUP}}", buildSetups())
+		string = string.cleverReplace("{{PROGRAM}}", programString)
+		return string
 	}
 
-//	def buildImports(Device device) {
-//		// TODO ideally only import things used in the program, but you know
-//		var imports = device.importedNamespace.implementations.filter[body.imports !== null].map[body.imports].toList
-//		var strings = new ArrayList<String>();
-//		for (import : imports) {
-//			// Split on new line to get each import as a separate line.
-//			// So we can check for duplicates
-//			strings.addAll(import.split("\n"))
-//		}
-//		// Return distinct list to string
-//		return strings.stream.distinct.collect(Collectors.toList()).join("\n")
-//	}
+	def buildImports(Device device) {
+		// TODO ideally only import things used in the program, but you know
+		var imports = device.deviceType.implementations.filter[body.imports !== null].map[body.imports].toList
+		var strings = new ArrayList<String>();
+		for (import : imports) {
+			// Split on new line to get each import as a separate line.
+			// So we can check for duplicates
+			strings.addAll(import.split("\n"))
+		}
+		// Return distinct list to string
+		return strings.stream.distinct.collect(Collectors.toList()).join("\n")
+	}
 
 	def buildSetups() {
 		var sb = new StringBuilder();
@@ -95,7 +91,10 @@ class IoTGenerator extends AbstractGenerator {
 				var impl = command.template
 				var paramsMap = new HashMap<String,String>();
 				for(arg : command.args){
-					paramsMap.put(arg.param.name, arg.value.generateCode)
+					if(!arg.param.isArray)
+						paramsMap.put(arg.param.name, arg.value.generateCode)
+					else
+						paramsMap.put(arg.param.name, arg.values.map[generateCode].join('\n'))
 				}
 				var setUpCode = impl.body.setup.insertParameters(paramsMap)
 				usedSetups.add(setUpCode);

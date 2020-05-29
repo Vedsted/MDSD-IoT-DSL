@@ -18,25 +18,35 @@ import org.eclipse.xtext.scoping.IScope
  */
 class IoTScopeProvider extends AbstractIoTScopeProvider {
 
-override getScope(EObject context, EReference reference) {
-	if (reference == IoTPackage.eINSTANCE.argument_Param) {
-		scopeForParamRef(context)
+	override getScope(EObject context, EReference reference) {
+		if (reference == IoTPackage.eINSTANCE.argument_Param) {
+			scopeForParamRef(context)
 
-	} else {
-		super.getScope(context, reference)
+		} else if (reference == IoTPackage.eINSTANCE.command_Template) {
+			scopeForCmdTemplate(context)
+		} else {
+			super.getScope(context, reference)
+		}
 	}
-}
 
-def protected IScope scopeForParamRef(EObject context) {
-	val container = context.eContainer
-	return switch (container) {
-		Command:
-			Scopes.scopeFor(     
-				   container.template.params)
-		
-		default:
-			scopeForParamRef(container)
+	def IScope scopeForCmdTemplate(EObject context) {
+		val container = context.eContainer
+		return switch (container) {
+			Device:
+				Scopes.scopeFor(container.deviceType.implementations)
+			default:
+				scopeForCmdTemplate(container)
+		}
 	}
-}
+
+	def protected IScope scopeForParamRef(EObject context) {
+		val container = context.eContainer
+		return switch (container) {
+			Command:
+				Scopes.scopeFor(container.template.params)
+			default:
+				scopeForParamRef(container)
+		}
+	}
 
 }

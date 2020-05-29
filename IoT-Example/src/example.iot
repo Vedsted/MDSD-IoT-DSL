@@ -1,12 +1,4 @@
-external mean  
-external log
-connectionConfig Wifi{
-	type:WLAN
-	"ssid":"Network2GHz"
-	"password": "kalenderlys"
-}
-
-iot.* device Cup {
+iot device Cup {  
 	wlan (SSID="network2", PASSWORD="kalenderlys")
 	listdeclare(NAME="temps")
 
@@ -16,9 +8,9 @@ iot.* device Cup {
 			RIGHT=listaddto(NAME="temps"),
 			UUID="anID0"
 		)
-	)
+	) 
 
-	loop(TSECONDS=1,NAME=1,COMMANDS=
+	loop(TSECONDS=1,NAME=1,COMMANDS=[
 		arrow(
 			LEFT=externalf(NAME="mean",TARGETNAME="temps"),
 			RIGHT=socketconnection(
@@ -29,11 +21,11 @@ iot.* device Cup {
 			UUID="anID2"
 		) 
 		,
-		COMMANDS=listclear(NAME="temps")
+		listclear(NAME="temps")]
 	)
 }
 
-controller.* device Server{ 
+controller device Server{ 
 	socketlisten(
 		IP="192.168.0.16", 
 		PORT=8000, 

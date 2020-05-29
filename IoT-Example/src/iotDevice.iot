@@ -1,5 +1,8 @@
-devicetype iot  
-	loop (TSECONDS, NAME, COMMANDS):
+devicetype iot  "main.py":
+"{{IMPORTS}}
+{{SETUP}}
+{{PROGRAM}}"
+	loop (TSECONDS, NAME, COMMANDS[]):
 		use:
 "def th_func{{NAME}}(action):
 	while True:

@@ -6,16 +6,16 @@ generate ioT "http://www.mdsd.sdu/IoT"
 
 Model:
 	deviceTypes+=DeviceDefinition*
-	system=IoTSystem;
+	system=IoTSystem?;
 
 DeviceDefinition:
-	'devicetype' name=ID
+	'devicetype' name=ID fileName=STRING ':'
+	body=STRING
 	implementations+=Implementation*;
 
 Implementation:
 	name=ID '(' params+=Parameter ( ',' params+=Parameter)* ')' ':'
 	body=ImplBody
-
 ;
 
 Parameter:
@@ -29,62 +29,13 @@ ImplBody:
 	('use:' use=STRING)?
 	;
 
-
-
-
-
 IoTSystem:
-	{IoTSystem}
-	externalDeclarations+=ExternalDeclaration*
-	configs+=Config*
-	devices+=Device*;
+	devices+=Device+;
 
-QualifiedName: ID ('.' ID)* ;
-
-terminal IP returns ecore::EString:
-	INT '.' INT '.' INT '.' INT; // IP
-terminal WINDOWS_SERIAL returns ecore::EString:
-	'COM' INT;
-
-ExternalDeclaration:
-	'external' name=ID // '(' type=STRING ')' // Commented out due to not being used
-;
-
-/*
- * Configurations
- */
-Config:
-	ConnectionConfig | DeviceConfig;
-
-DeviceConfig returns Config:
-	{DeviceConfig} 'deviceConfig' name=ID '{'
-	declarations+=Declaration*
-	'}';
-
-ConnectionConfig returns Config:
-	{ConnectionConfig} 'connectionConfig' name=ID '{'
-	'type' ':' type=ConfigType
-	declarations+=Declaration*
-	'}';
-
-ConfigType:
-	'SERIAL' | 'WLAN';
-
-Declaration:
-	key=STRING ':' value=STRING;
-
-	/*
- * Device 
- */
 Device:
-	importedNamespace=QualifiedNameWithWildCard 'device' name=ID '{'
+	deviceType=[DeviceDefinition] 'device' name=ID '{'
 	program=Program
 	'}';
-
-QualifiedNameWithWildCard:
-	
-QualifiedName '.*'? 
-;
 
 Program:
 	{Program} topLevelCommands+= TopLevelCommand*
@@ -104,10 +55,8 @@ Number:
 ;
 
 Argument:
-	param=[Parameter] '=' (value=TopLevelCommand)
+	param=[Parameter] '=' (value=TopLevelCommand | '[' values+=TopLevelCommand (',' values+=TopLevelCommand)* ']')
 ;
-
-
 
 Command:
 	template=[Implementation] '('args+=Argument (',' args+=Argument )* ')'

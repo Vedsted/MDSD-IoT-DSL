@@ -12,3 +12,7 @@ sdu.mdsd.iot.tests/xtend-gen/
 sdu.mdsd.iot.ide/xtend-gen/
 
 sdu.mdsd.iot/xtend-gen/
+
+CsharpController/CsharpController/CsharpController/obj/
+
+CsharpController/CsharpController/.vs/
