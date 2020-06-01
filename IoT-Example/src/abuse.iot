@@ -1,0 +1,16 @@
+// DeviceDefinition:
+devicetype java "program.java":
+"{{IMPORTS}}
+class Program{
+	public static void main(String[] args){
+		{{SETUP}}
+		{{PROGRAM}}
+	}
+}
+"
+printAString (TheString):
+	use: 'System.out.println("{{TheString}}");'
+// IoTSystem:
+java device Program {
+	printAString(TheString='"); throw new Error("hello')
+}
