@@ -14,11 +14,11 @@ import sdu.mdsd.ioT.ImplBody
 
 /**
  * This class contains custom validation rules. 
- *
+ * 
  * See https://www.eclipse.org/Xtext/documentation/303_runtime_concepts.html#validation
  */
 class IoTValidator extends AbstractIoTValidator {
-	
+
 	public static val INVALID_NAME = 'invalidName'
 
 	@Check
@@ -26,25 +26,18 @@ class IoTValidator extends AbstractIoTValidator {
 		var code = template.imports
 		var parentObject = template.eContainer
 		var params = (parentObject as Implementation)?.params?.params
-		if(params !== null){
-			
-		val pattern = "\\{\\{\\w*\\}\\}";
-		var regex = Pattern.compile(pattern);
-		var match = regex.matcher(code);
-
-		while (match.find()) {
-			val parameter = code.substring(match.start()+2, match.end()-2)
-			if(params.filter[item | item.name.equals(parameter)].isEmpty){
-				val atts = IoTPackage.eINSTANCE.implBody_Imports;
-				
-				error('''Parameter «parameter» not declared''', atts)
-			
+		if (params !== null) {
+			val pattern = "\\{\\{\\w*\\}\\}";
+			var regex = Pattern.compile(pattern);
+			var match = regex.matcher(code);
+			while (match.find()) {
+				val parameter = code.substring(match.start() + 2, match.end() - 2)
+				if (params.filter[item|item.name.equals(parameter)].isEmpty) {
+					val atts = IoTPackage.eINSTANCE.implBody_Imports;
+					error('''Parameter «parameter» not declared''', atts)
+				}
 			}
 		}
-		} 
-		
 	}
-	
-	
-	
+
 }
