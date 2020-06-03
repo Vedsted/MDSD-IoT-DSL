@@ -83,15 +83,15 @@ class IoTGenerator extends AbstractGenerator {
 				var pw = command.connectionConfig?.declarations?.extractDeclaration("password")?.value;
 				if (ssid === null || pw === null)
 					throw new Exception("You should have a connectConfig before connecting to wifi")
-				params.put("SSID", ssid)
-				params.put("PASSWORD", pw)
+				params.put("ssid", ssid)
+				params.put("password", pw)
 				klass = WlanTmpl
 			}
 			ListenStatement: {
 				
-				params.put("IP", command.ip)
-				params.put("PORT", command.port.toString())
-				params.put("COMMANDS", command.body.buildCommand)
+				params.put("ip", command.ip)
+				params.put("port", command.port.toString())
+				params.put("commands", command.body.buildCommand)
 			klass = SocketListenTmpl
 			}
 			VarOrList: {
@@ -108,10 +108,10 @@ class IoTGenerator extends AbstractGenerator {
 				}
 			}
 			Loop: {
-				params.put("TSECONDS", command.convertSleepTime)
-				params.put("NAME", loopCount.toString())
+				params.put("time", command.convertSleepTime)
+				params.put("UUID", loopCount.toString())
 				loopCount++;
-				params.put("COMMANDS", command.command.buildCommands())
+				params.put("commands", command.command.buildCommands())
 				klass = LoopTmpl
 			}
 			ConnectStatement: {
@@ -136,14 +136,14 @@ class IoTGenerator extends AbstractGenerator {
 		var Class<? extends Template> klass;
 		switch (command) {
 			ArrowCommand: {
-				params.put("LEFT", command.left.buildCommand)
-				params.put("RIGHT", command.right.buildCommand)
+				params.put("left", command.left.buildCommand)
+				params.put("right", command.right.buildCommand)
 				val uuid = UUID.randomUUID.toString.replace('-', '_'); // dashes are illegal in method names in python
 				params.put("UUID", uuid)
 				klass = ArrowTmpl
 			}
 			ClearListAction: {
-				params.put("NAME", command.list.name)
+				params.put("name", command.list.name)
 				klass = ListClearTmpl
 			}
 			ReadSensor: {
@@ -151,23 +151,23 @@ class IoTGenerator extends AbstractGenerator {
 				klass = SensorTmpl
 			}
 			ExternalOf: {
-				params.put("NAME", command.method.name)
-				params.put("TARGETNAME", command.target.name)
+				params.put("method", command.method.name)
+				params.put("target", command.target.name)
 				klass = ExternalTmpl
 			}
 			AddToList: {
-				params.put("NAME", command.list.name)
+				params.put("name", command.list.name)
 				klass = ListAddTmpl
 			}
 			SendCommand: {
-				params.put("IP", command.target.program.topLevelCommands.filter(ListenStatement).get(0).ip)
-				params.put("PORT",
+				params.put("ip", command.target.program.topLevelCommands.filter(ListenStatement).get(0).ip)
+				params.put("port",
 					command.target.program.topLevelCommands.filter(ListenStatement).get(0).port.toString())
-				params.put("TARGET_DEVICE", command.target.name)
+				params.put("target", command.target.name)
 				klass = SocketConnectTmpl
 			}
 			ExternalRight: {
-				params.put("NAME", command.method.name)
+				params.put("method", command.method.name)
 				klass = ExternalTmpl
 			}
 		}

@@ -9,6 +9,8 @@ import org.eclipse.xtext.validation.Check
 import java.util.regex.Pattern
 import java.util.regex.Matcher
 import sdu.mdsd.ioT.IoTPackage
+import org.eclipse.emf.ecore.EReference
+import org.eclipse.emf.ecore.EStructuralFeature
 
 /**
  * This class contains custom validation rules. 
@@ -21,7 +23,14 @@ class IoTValidator extends AbstractIoTValidator {
 
 	@Check
 	def checkTemplateCodeStringParamNamesExist(TmplBody template) {
-		var code = template.imports
+		checkCode(template.imports, template, IoTPackage.eINSTANCE.tmplBody_Imports)
+		checkCode(template.setup, template, IoTPackage.eINSTANCE.tmplBody_Setup)
+		checkCode(template.use, template,  IoTPackage.eINSTANCE.tmplBody_Use)
+	}
+	
+	def checkCode(String code, TmplBody template, EStructuralFeature atts){
+		if(code === null)
+			return;
 		var parentObject = template.eContainer
 		var params = (parentObject as Template)?.params?.params
 		if (params !== null) {
@@ -31,10 +40,43 @@ class IoTValidator extends AbstractIoTValidator {
 			while (match.find()) {
 				val parameter = code.substring(match.start() + 2, match.end() - 2)
 				if (params.filter[item|item.name.equals(parameter)].isEmpty) {
-					val atts = IoTPackage.eINSTANCE.tmplBody_Imports;
 					error('''Parameter «parameter» not declared''', atts)
 				}
 			}
+		}
+	}
+
+	@Check
+	def checkTemplateParamsValid(TmplParam par) {
+		var tmpl = par.eContainer.eContainer as Template
+		val atts = IoTPackage.eINSTANCE.tmplParam_Meaning;
+		switch (tmpl) {
+			WlanTmpl:
+				if(par.meaning != "ssid" && par.meaning != "password") error('''Parameter «par.meaning» is not valid''',
+					atts)
+			SocketListenTmpl:
+				if(par.meaning != "ip" && par.meaning != "port" &&
+					par.meaning != "commands") error('''Parameter «par.meaning» is not valid''', atts)
+			SensorTmpl:
+				error('''Parameter «par.meaning» is not valid''', atts)
+			SocketConnectTmpl:
+				if(par.meaning != "ip" && par.meaning != "port" &&
+					par.meaning != "target") error('''Parameter «par.meaning» is not valid''', atts)
+			LoopTmpl:
+				if(par.meaning != "time" && par.meaning != "commands") error('''Parameter «par.meaning» is not valid''',
+					atts)
+			ArrowTmpl:
+				if(par.meaning != "left" && par.meaning != "right") error('''Parameter «par.meaning» is not valid''',
+					atts)
+			ListDeclTmpl:
+				if(par.meaning != "name") error('''Parameter «par.meaning» is not valid''', atts)
+			ListAddTmpl:
+				if(par.meaning != "name") error('''Parameter «par.meaning» is not valid''', atts)
+			ListClearTmpl:
+				if(par.meaning != "name") error('''Parameter «par.meaning» is not valid''', atts)
+			ExternalTmpl:
+				if(par.meaning != "method" && par.meaning != "target") error('''Parameter «par.meaning» is not valid''',
+					atts)
 		}
 	}
 

@@ -7,11 +7,11 @@ namespace CsharpController{
 		{{PROGRAM}}
        }}}
 "
-external (NAME=NAME):
-	use:
+external (method=NAME): 
+	use: 
 "Externals.{{NAME}}(value);"
 
-socketlisten (IP=IP, PORT=PORT, COMMANDS=COMMANDS):
+socketlisten (ip=IP, port=PORT, commands=COMMANDS):
 		import:
 "using System;
 using System.Collections.Generic;
