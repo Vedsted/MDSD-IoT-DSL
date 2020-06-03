@@ -76,7 +76,7 @@ WlanImpl:
 IoTSystem:
 	{IoTSystem}
 	externalDeclarations+=ExternalDeclaration*
-	configs+=Config*
+	configs+=ConnectionConfig*
 	devices+=Device*;
 
 QualifiedName:
@@ -94,13 +94,6 @@ ExternalDeclaration:
 /*
  * Configurations
  */
-Config:
-	ConnectionConfig | DeviceConfig;
-
-DeviceConfig returns Config:
-	{DeviceConfig} 'deviceConfig' name=ID '{'
-	declarations+=Declaration*
-	'}';
 
 ConnectionConfig returns Config:
 	{ConnectionConfig} 'connectionConfig' name=ID '{'
@@ -139,8 +132,7 @@ ConnectStatement:
 
 Address:
 	{IpAddress} value=IP |
-	{WindowsSerialAddress} value=WINDOWS_SERIAL |
-	{UnixSerialAddress} value=STRING // TODO: validation
+	{SerialAddress} value=STRING // TODO: validation
 ;
 
 VarOrList:
