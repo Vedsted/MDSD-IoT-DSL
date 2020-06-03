@@ -3,14 +3,12 @@
  */
 package sdu.mdsd.validation
 
-import sdu.mdsd.ioT.Implementation
+import sdu.mdsd.ioT.*;
 import org.eclipse.emf.common.util.EList
-import sdu.mdsd.ioT.ImplParam
 import org.eclipse.xtext.validation.Check
 import java.util.regex.Pattern
 import java.util.regex.Matcher
 import sdu.mdsd.ioT.IoTPackage
-import sdu.mdsd.ioT.ImplBody
 
 /**
  * This class contains custom validation rules. 
@@ -22,10 +20,10 @@ class IoTValidator extends AbstractIoTValidator {
 	public static val INVALID_NAME = 'invalidName'
 
 	@Check
-	def checkTemplateCodeStringParamNamesExist(ImplBody template) {
+	def checkTemplateCodeStringParamNamesExist(TmplBody template) {
 		var code = template.imports
 		var parentObject = template.eContainer
-		var params = (parentObject as Implementation)?.params?.params
+		var params = (parentObject as Template)?.params?.params
 		if (params !== null) {
 			val pattern = "\\{\\{\\w*\\}\\}";
 			var regex = Pattern.compile(pattern);
@@ -33,7 +31,7 @@ class IoTValidator extends AbstractIoTValidator {
 			while (match.find()) {
 				val parameter = code.substring(match.start() + 2, match.end() - 2)
 				if (params.filter[item|item.name.equals(parameter)].isEmpty) {
-					val atts = IoTPackage.eINSTANCE.implBody_Imports;
+					val atts = IoTPackage.eINSTANCE.tmplBody_Imports;
 					error('''Parameter «parameter» not declared''', atts)
 				}
 			}

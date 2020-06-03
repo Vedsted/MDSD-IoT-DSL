@@ -13,65 +13,65 @@ Model:
 DeviceDefinition:
 	'devicetype' name=ID fileName=STRING ':'
 	body=STRING
-	implementations+=Implementation*;
+	templates+=Template*;
 
-Implementation:
-	WlanImpl | SocketListenImpl | SensorImpl | SocketConnectImpl | LoopImpl | ArrowImpl | ListDeclImpl | ListAddImpl |
-	ListClearImpl | ExternalImpl;
+Template:
+	WlanTmpl | SocketListenTmpl | SensorTmpl | SocketConnectTmpl | LoopTmpl | ArrowTmpl | ListDeclTmpl | ListAddTmpl |
+	ListClearTmpl | ExternalTmpl;
 
-SocketConnectImpl:
-	'socketconnection' params=ImplParams? ':'
-	body=ImplBody;
+SocketConnectTmpl:
+	'socketconnection' params=TmplParams? ':'
+	body=TmplBody;
 
-SensorImpl:
-	'sensor' name=ID params=ImplParams? ':'
-	body=ImplBody;
+SensorTmpl:
+	'sensor' name=ID params=TmplParams? ':'
+	body=TmplBody;
 
-ImplBody:
-	{ImplBody}
+TmplBody:
+	{TmplBody}
 	('import:' imports=STRING)?
 	('setup:' setup=STRING)?
 	('use:' use=STRING)?;
 
-ImplParams:
-	'(' params+=ImplParam (',' params+=ImplParam)* ')';
+TmplParams:
+	'(' params+=TmplParam (',' params+=TmplParam)* ')';
 
-ImplParam:
+TmplParam:
 	meaning=ID '=' name=ID
 ;
 	
 
-ExternalImpl:
-	'external' params=ImplParams? ':'
-	body=ImplBody;
+ExternalTmpl:
+	'external' params=TmplParams? ':'
+	body=TmplBody;
 
-ListDeclImpl:
-	'listdeclare' params=ImplParams? ':'
-	body=ImplBody;
+ListDeclTmpl:
+	'listdeclare' params=TmplParams? ':'
+	body=TmplBody;
 
-ListClearImpl:
-	'listclear' params=ImplParams? ':'
-	body=ImplBody;
+ListClearTmpl:
+	'listclear' params=TmplParams? ':'
+	body=TmplBody;
 
-ListAddImpl:
-	'listaddto' params=ImplParams? ':'
-	body=ImplBody;
+ListAddTmpl:
+	'listaddto' params=TmplParams? ':'
+	body=TmplBody;
 
-ArrowImpl:
-	'arrow' params=ImplParams? ':'
-	body=ImplBody;
+ArrowTmpl:
+	'arrow' params=TmplParams? ':'
+	body=TmplBody;
 
-LoopImpl:
-	'loop' params=ImplParams? ':'
-	body=ImplBody;
+LoopTmpl:
+	'loop' params=TmplParams? ':'
+	body=TmplBody;
 
-SocketListenImpl:
-	'socketlisten' params=ImplParams? ':'
-	body=ImplBody;
+SocketListenTmpl:
+	'socketlisten' params=TmplParams? ':'
+	body=TmplBody;
 
-WlanImpl:
-	'wlan' params=ImplParams? ':'
-	body=ImplBody;
+WlanTmpl:
+	'wlan' params=TmplParams? ':'
+	body=TmplBody;
 
 IoTSystem:
 	{IoTSystem}
@@ -190,7 +190,7 @@ ExternalOf:
 	method=[ExternalDeclaration] 'of' target=[VarOrList];
 
 ReadSensor:
-	'read' 'sensor' sensor=[SensorImpl|QualifiedName];
+	'read' 'sensor' sensor=[SensorTmpl|QualifiedName];
 
 ExpressionRight returns Command:
 	SendCommand | AddToList | ToVar | ExternalRight | Block;

@@ -44,7 +44,7 @@ class IoTGenerator extends AbstractGenerator {
 	}
 	def buildImports(Device device) {
 		// TODO ideally only import things used in the program, but you know
-		var imports = device.deviceType.implementations.filter[body.imports !== null].map[body.imports].toList
+		var imports = device.deviceType.templates.filter[body.imports !== null].map[body.imports].toList
 		var strings = new ArrayList<String>();
 		for (import : imports) {
 			// Split on new line to get each import as a separate line.
@@ -76,7 +76,7 @@ class IoTGenerator extends AbstractGenerator {
 
 	def String generateCode(TopLevelCommand command) {
 		var params = new HashMap<String, String>()
-		var Class<? extends Implementation> klass;
+		var Class<? extends Template> klass;
 		switch (command) {
 			WifiStatement: {
 				var ssid = command.connectionConfig?.declarations?.extractDeclaration("ssid")?.value;
@@ -85,14 +85,14 @@ class IoTGenerator extends AbstractGenerator {
 					throw new Exception("You should have a connectConfig before connecting to wifi")
 				params.put("SSID", ssid)
 				params.put("PASSWORD", pw)
-				klass = WlanImpl
+				klass = WlanTmpl
 			}
 			ListenStatement: {
 				
 				params.put("IP", command.ip)
 				params.put("PORT", command.port.toString())
 				params.put("COMMANDS", command.body.buildCommand)
-			klass = SocketListenImpl
+			klass = SocketListenTmpl
 			}
 			VarOrList: {
 				switch (command) {
@@ -101,7 +101,7 @@ class IoTGenerator extends AbstractGenerator {
 					}
 					PyList: {
 						params.put("NAME", command.name);
-						klass = ListDeclImpl
+						klass = ListDeclTmpl
 					}
 					default:
 						throw new Exception("NOT A VAR OR LIST")
@@ -112,7 +112,7 @@ class IoTGenerator extends AbstractGenerator {
 				params.put("NAME", loopCount.toString())
 				loopCount++;
 				params.put("COMMANDS", command.command.buildCommands())
-				klass = LoopImpl
+				klass = LoopTmpl
 			}
 			ConnectStatement: {
 				throw new Exception("NOT IMPLEMENTED YET")
@@ -133,53 +133,53 @@ class IoTGenerator extends AbstractGenerator {
 
 	def String buildCommand(Command command) {
 		var params = new HashMap<String, String>()
-		var Class<? extends Implementation> klass;
+		var Class<? extends Template> klass;
 		switch (command) {
 			ArrowCommand: {
 				params.put("LEFT", command.left.buildCommand)
 				params.put("RIGHT", command.right.buildCommand)
 				val uuid = UUID.randomUUID.toString.replace('-', '_'); // dashes are illegal in method names in python
 				params.put("UUID", uuid)
-				klass = ArrowImpl
+				klass = ArrowTmpl
 			}
 			ClearListAction: {
 				params.put("NAME", command.list.name)
-				klass = ListClearImpl
+				klass = ListClearTmpl
 			}
 			ReadSensor: {
-				doSetup(SensorImpl, params)
-				klass = SensorImpl
+				doSetup(SensorTmpl, params)
+				klass = SensorTmpl
 			}
 			ExternalOf: {
 				params.put("NAME", command.method.name)
 				params.put("TARGETNAME", command.target.name)
-				klass = ExternalImpl
+				klass = ExternalTmpl
 			}
 			AddToList: {
 				params.put("NAME", command.list.name)
-				klass = ListAddImpl
+				klass = ListAddTmpl
 			}
 			SendCommand: {
 				params.put("IP", command.target.program.topLevelCommands.filter(ListenStatement).get(0).ip)
 				params.put("PORT",
 					command.target.program.topLevelCommands.filter(ListenStatement).get(0).port.toString())
 				params.put("TARGET_DEVICE", command.target.name)
-				klass = SocketConnectImpl
+				klass = SocketConnectTmpl
 			}
 			ExternalRight: {
 				params.put("NAME", command.method.name)
-				klass = ExternalImpl
+				klass = ExternalTmpl
 			}
 		}
 				doSetup(klass,params)
 		return getUseCodeFor(klass, params)
 	}
 
-	def doSetup(Class<? extends Implementation> class1, Map<String, String> paramsMap) {
+	def doSetup(Class<? extends Template> class1, Map<String, String> paramsMap) {
 
-		var implementations = currentDevice.deviceType.implementations.filter(class1).toList
+		var templates = currentDevice.deviceType.templates.filter(class1).toList
 
-		for (impl : implementations) {
+		for (impl : templates) {
 			var setup = impl.body.setup;
 			if (setup !== null) {
 
@@ -190,11 +190,11 @@ class IoTGenerator extends AbstractGenerator {
 
 	}
 
-	def getUseCodeFor(Class<? extends Implementation> class1, Map<String, String> paramsMap) {
+	def getUseCodeFor(Class<? extends Template> class1, Map<String, String> paramsMap) {
 		var sb = new StringBuilder();
-		var implementations = currentDevice.deviceType.implementations.filter(class1).toList
+		var templates = currentDevice.deviceType.templates.filter(class1).toList
 
-		for (impl : implementations) {
+		for (impl : templates) {
 			var use = impl.body.use;
 			if (use !== null) {
 
@@ -206,7 +206,7 @@ class IoTGenerator extends AbstractGenerator {
 
 	}
 
-	def insertParameters(String setup, List<ImplParam> params, Map<String, String> paramsMap) {
+	def insertParameters(String setup, List<TmplParam> params, Map<String, String> paramsMap) {
 		var codeString = setup
 		if (codeString === null) {
 			throw new Exception("Why is the code string null")
