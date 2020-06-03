@@ -1,18 +1,18 @@
 external mean  
-external log 
+external log
 connectionConfig Wifi{
 	type:WLAN
 	"ssid":"Network2GHz"
 	"password": "kalenderlys"
 	 
-}
+} 
 
 iot device Cup {
 	setup Wifi
-	list tempss 
+	list tempss   
 	
-	every 10 MILLISECONDS{
-		read sensor iot.TEMPERATURE -> add to tempss
+	every 10 MILLISECONDS{ 
+		read sensor LIGHT -> add to tempss
 	}
 	
 	every 100 MILLISECONDS {

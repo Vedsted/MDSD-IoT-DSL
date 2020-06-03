@@ -100,7 +100,7 @@ class IoTGenerator extends AbstractGenerator {
 						throw new Exception("NOT IMPLEMENTED YET")
 					}
 					PyList: {
-						params.put("NAME", command.name);
+						params.put("name", command.name);
 						klass = ListDeclTmpl
 					}
 					default:
@@ -147,8 +147,8 @@ class IoTGenerator extends AbstractGenerator {
 				klass = ListClearTmpl
 			}
 			ReadSensor: {
-				doSetup(SensorTmpl, params)
-				klass = SensorTmpl
+				usedSetups.add(command.sensor.body.setup)
+				return command.sensor.body.use;
 			}
 			ExternalOf: {
 				params.put("method", command.method.name)
@@ -222,6 +222,7 @@ class IoTGenerator extends AbstractGenerator {
 			}
 			codeString = codeString.cleverReplace('''{{«param»}}''', newValue)
 		}
+		codeString = codeString.cleverReplace('''{{UUID}}''', UUID.randomUUID.toString.replace('-', '_'))
 		return codeString;
 	}
 

@@ -1,7 +1,6 @@
 devicetype iot "main.py": 
 "{{IMPORTS}}
-
-{{SETUP}}
+ {{SETUP}} 
 
 {{PROGRAM}}
 "
@@ -26,14 +25,14 @@ return temperature"
 def loop{{UUID}}():
 	{{COMMANDS}}
 
-_thread.start_new_thread(th_func{{NAME}}, (loop{{NAME}},))"
+_thread.start_new_thread(th_func{{UUID}}, (loop{{UUID}},))" 
 	listdeclare (name=THENAMEOFTHELIST):
 		setup:
 "{{THENAMEOFTHELIST}} = []"
 	listclear (name=NAME):
 		use:
 "global {{NAME}}
-{{NAME}} = []"
+{{NAME}} = []" 
 	listaddto (name=NAME):
 		use:
 "{{NAME}}.append(value)"
@@ -62,7 +61,7 @@ from machine import idle"
 "wlan = WLAN(mode=WLAN.STA)
 nets = wlan.scan()
 for net in nets:
-	if net.ssid == {{SSID}}:
+	if net.ssid == '{{SSID}}':
 		print('Network found!')
 		wlan.connect(net.ssid, auth=(net.sec, {{PASSWORD}}))
 		while not wlan.isconnected():
@@ -81,6 +80,18 @@ apin = adc.channel(pin='P16', attn=2)   # create an analog pin on P16"
 		use:
 "temperature = apin()
 return temperature"
+	sensor LIGHT : 
+		import:
+"from LTR329ALS01 import LTR329ALS01" 
+		setup:
+"integration_time = LTR329ALS01.ALS_INT_50
+measurement_rate = LTR329ALS01.ALS_RATE_50 
+gain = LTR329ALS01.ALS_GAIN_1X 
+lightsensor = LTR329ALS01(integration=integration_time, rate=measurement_rate, gain=gain)"
+		use:
+"luxTuple = lightsensor.light()
+lux = (luxTuple[0]+luxTuple[1])/2
+return lux"
  
 	socketconnection (ip=IP, port=PORT, target=TARGET_DEVICE):
 		import:

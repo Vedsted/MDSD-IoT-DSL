@@ -3,6 +3,12 @@
  */
 package sdu.mdsd.scoping
 
+import org.eclipse.emf.ecore.EObject
+import org.eclipse.emf.ecore.EReference
+import sdu.mdsd.ioT.IoTPackage
+import sdu.mdsd.ioT.Device
+import org.eclipse.xtext.scoping.Scopes
+import org.eclipse.xtext.scoping.IScope
 
 /**
  * This class contains custom scoping description.
@@ -12,4 +18,22 @@ package sdu.mdsd.scoping
  */
 class IoTScopeProvider extends AbstractIoTScopeProvider {
 
+	override getScope(EObject context, EReference reference) {
+		if (reference == IoTPackage.eINSTANCE.readSensor_Sensor) {
+			scopeForSensorRef(context)
+		} else {
+			super.getScope(context, reference)
+		}
+	}
+	
+	def IScope scopeForSensorRef(EObject context) {
+		val container = context.eContainer
+		return switch (container) {
+			Device:
+				Scopes.scopeFor(container.deviceType.templates)
+			default:
+				scopeForSensorRef(container)
+		}
+	}
+	
 }

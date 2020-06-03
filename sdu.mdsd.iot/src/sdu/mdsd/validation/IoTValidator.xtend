@@ -22,14 +22,32 @@ class IoTValidator extends AbstractIoTValidator {
 	public static val INVALID_NAME = 'invalidName'
 
 	@Check
+	def checkDDLBody(DeviceDefinition ddl) {
+		
+		if(!ddl.body.contains("{{IMPORTS}}")|| !ddl.body.contains("{{SETUP}}" )|| !ddl.body.contains("{{PROGRAM}}")){
+				error('''DDL body must contain {{IMPORTS}}, {{SETUP}} and {{PROGRAM}}''', IoTPackage.eINSTANCE.deviceDefinition_Body)
+			}
+			
+		val pattern = "\\{\\{[\\w\\s]*\\}\\}";
+		var regex = Pattern.compile(pattern);
+		var match = regex.matcher(ddl.body);
+		while (match.find()) {
+			val parameter = ddl.body.substring(match.start() + 2, match.end() - 2)
+			if(parameter != "IMPORTS" && parameter != "SETUP" && parameter != "PROGRAM"){
+				error('''Parameter «parameter» not valid''', IoTPackage.eINSTANCE.deviceDefinition_Body)
+			}
+		}
+	}
+
+	@Check
 	def checkTemplateCodeStringParamNamesExist(TmplBody template) {
 		checkCode(template.imports, template, IoTPackage.eINSTANCE.tmplBody_Imports)
 		checkCode(template.setup, template, IoTPackage.eINSTANCE.tmplBody_Setup)
-		checkCode(template.use, template,  IoTPackage.eINSTANCE.tmplBody_Use)
+		checkCode(template.use, template, IoTPackage.eINSTANCE.tmplBody_Use)
 	}
-	
-	def checkCode(String code, TmplBody template, EStructuralFeature atts){
-		if(code === null)
+
+	def checkCode(String code, TmplBody template, EStructuralFeature atts) {
+		if (code === null)
 			return;
 		var parentObject = template.eContainer
 		var params = (parentObject as Template)?.params?.params
@@ -39,7 +57,7 @@ class IoTValidator extends AbstractIoTValidator {
 			var match = regex.matcher(code);
 			while (match.find()) {
 				val parameter = code.substring(match.start() + 2, match.end() - 2)
-				if (params.filter[item|item.name.equals(parameter)].isEmpty) {
+				if (params.filter[item|item.name.equals(parameter)].isEmpty && parameter != "UUID") {
 					error('''Parameter «parameter» not declared''', atts)
 				}
 			}
@@ -52,8 +70,8 @@ class IoTValidator extends AbstractIoTValidator {
 		val atts = IoTPackage.eINSTANCE.tmplParam_Meaning;
 		switch (tmpl) {
 			WlanTmpl:
-				if(par.meaning != "ssid" && par.meaning != "password") error('''Parameter «par.meaning» is not valid''',
-					atts)
+				if (par.meaning != "ssid" && par.meaning != "password")
+					error('''Parameter «par.meaning» is not valid''', atts)
 			SocketListenTmpl:
 				if(par.meaning != "ip" && par.meaning != "port" &&
 					par.meaning != "commands") error('''Parameter «par.meaning» is not valid''', atts)
@@ -63,11 +81,11 @@ class IoTValidator extends AbstractIoTValidator {
 				if(par.meaning != "ip" && par.meaning != "port" &&
 					par.meaning != "target") error('''Parameter «par.meaning» is not valid''', atts)
 			LoopTmpl:
-				if(par.meaning != "time" && par.meaning != "commands") error('''Parameter «par.meaning» is not valid''',
-					atts)
+				if (par.meaning != "time" && par.meaning != "commands")
+					error('''Parameter «par.meaning» is not valid''', atts)
 			ArrowTmpl:
-				if(par.meaning != "left" && par.meaning != "right") error('''Parameter «par.meaning» is not valid''',
-					atts)
+				if (par.meaning != "left" && par.meaning != "right")
+					error('''Parameter «par.meaning» is not valid''', atts)
 			ListDeclTmpl:
 				if(par.meaning != "name") error('''Parameter «par.meaning» is not valid''', atts)
 			ListAddTmpl:
@@ -75,8 +93,8 @@ class IoTValidator extends AbstractIoTValidator {
 			ListClearTmpl:
 				if(par.meaning != "name") error('''Parameter «par.meaning» is not valid''', atts)
 			ExternalTmpl:
-				if(par.meaning != "method" && par.meaning != "target") error('''Parameter «par.meaning» is not valid''',
-					atts)
+				if (par.meaning != "method" && par.meaning != "target")
+					error('''Parameter «par.meaning» is not valid''', atts)
 		}
 	}
 

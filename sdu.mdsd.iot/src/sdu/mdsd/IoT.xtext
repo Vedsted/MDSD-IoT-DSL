@@ -79,8 +79,7 @@ IoTSystem:
 	configs+=ConnectionConfig*
 	devices+=Device*;
 
-QualifiedName:
-	ID ('.' ID)*;
+
 
 terminal IP returns ecore::EString:
 	INT '.' INT '.' INT '.' INT; // IP
@@ -190,7 +189,7 @@ ExternalOf:
 	method=[ExternalDeclaration] 'of' target=[VarOrList];
 
 ReadSensor:
-	'read' 'sensor' sensor=[SensorTmpl|QualifiedName];
+	'read' 'sensor' sensor=[SensorTmpl];
 
 ExpressionRight returns Command:
 	SendCommand | AddToList | ToVar | ExternalRight | Block;
