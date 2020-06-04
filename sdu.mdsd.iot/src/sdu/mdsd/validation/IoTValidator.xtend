@@ -11,6 +11,8 @@ import java.util.regex.Matcher
 import sdu.mdsd.ioT.IoTPackage
 import org.eclipse.emf.ecore.EReference
 import org.eclipse.emf.ecore.EStructuralFeature
+import org.eclipse.emf.ecore.EObject
+import sdu.mdsd.ioT.WlanTmpl
 
 /**
  * This class contains custom validation rules. 
@@ -22,18 +24,111 @@ class IoTValidator extends AbstractIoTValidator {
 	public static val INVALID_NAME = 'invalidName'
 
 	@Check
-	def checkDDLBody(DeviceDefinition ddl) {
+	def checkThatTemplateExists(Program prg) {
+		for (var i = 0; i < prg.topLevelCommands.length; i++) {
+			checkTemplates(prg.topLevelCommands.get(i), i, IoTPackage.eINSTANCE.program_TopLevelCommands)
+		}
+	}
+
+	@Check
+	def checkThatTemplateExists2(ListenStatement prg) {
+		checkTemplates(prg.body, 0,IoTPackage.eINSTANCE.listenStatement_Body)
+	}
+
+	@Check
+	def checkThatTemplateExists3(Block prg) {
+		for (var i = 0; i < prg.commands.length; i++) {
+			checkTemplates(prg.commands.get(i), i,IoTPackage.eINSTANCE.block_Commands)
+		}
+	}
+
+	@Check
+	def checkThatTemplateExists4(ArrowCommand prg) {
+		checkTemplates(prg.left, 0, IoTPackage.eINSTANCE.arrowCommand_Left)
+		checkTemplates(prg.right, 0, IoTPackage.eINSTANCE.arrowCommand_Right)
+	}
+	
+	@Check
+	def checkThatTemplateExists5(Loop prg) {
+		for (var i = 0; i < prg.command.length; i++) {
+			checkTemplates(prg.command.get(i), i, IoTPackage.eINSTANCE.loop_Command)
+		}
+	}
+	
+	
+	@Check
+	def checkThatTemplateExists6(IfStatement prg) {
+
+		for (var i = 0; i < prg.commands.length; i++) {
+			checkTemplates(prg.commands.get(i), i,IoTPackage.eINSTANCE.ifStatement_Commands)
+		}
 		
-		if(!ddl.body.contains("{{IMPORTS}}")|| !ddl.body.contains("{{SETUP}}" )|| !ddl.body.contains("{{PROGRAM}}")){
-				error('''DDL body must contain {{IMPORTS}}, {{SETUP}} and {{PROGRAM}}''', IoTPackage.eINSTANCE.deviceDefinition_Body)
-			}
-			
+	}
+		@Check
+	def checkThatTemplateExists7(ElseBlock prg) {
+		for (var i = 0; i < prg.commands.length; i++) {
+			checkTemplates(prg.commands.get(i), i, IoTPackage.eINSTANCE.elseBlock_Commands)
+		}
+		
+	}
+
+	def checkTemplates(Command cmd, int index,EStructuralFeature feature) {
+		switch (cmd) {
+			SendCommand: checkIfTemplateExists(cmd.eContainer, SocketConnectTmpl, index,feature)
+			AddToList: checkIfTemplateExists(cmd.eContainer, ListAddTmpl, index,feature)
+			ToVar: checkIfTemplateExists(cmd.eContainer, null, index,feature)
+			ExternalRight: checkIfTemplateExists(cmd.eContainer, ExternalTmpl, index,feature)
+			ClearListAction: checkIfTemplateExists(cmd.eContainer, ListClearTmpl, index,feature)
+			LEDAction: checkIfTemplateExists(cmd.eContainer, null, index,feature)
+			ArrowCommand: checkIfTemplateExists(cmd.eContainer, ArrowTmpl, index,feature)
+			IfStatement: checkIfTemplateExists(cmd.eContainer, null, index,feature)
+			ExternalOf: checkIfTemplateExists(cmd.eContainer, ExternalTmpl, index,feature)
+			ReadSensor: checkIfTemplateExists(cmd.eContainer, SensorTmpl, index,feature)
+			ReadConnection: checkIfTemplateExists(cmd.eContainer, null, index,feature)
+			ReadVariable: checkIfTemplateExists(cmd.eContainer, null, index,feature)
+			BoolExpression: checkIfTemplateExists(cmd.eContainer, null, index,feature)
+			IntExpression: checkIfTemplateExists(cmd.eContainer, null, index,feature)
+			VarAccess: checkIfTemplateExists(cmd.eContainer, null, index,feature)
+		}
+	}
+
+	def checkTemplates(TopLevelCommand cmd, int index, EStructuralFeature feature) {
+		switch (cmd) {
+			WifiStatement: checkIfTemplateExists(cmd.eContainer, WlanTmpl, index,feature)
+			ListenStatement: checkIfTemplateExists(cmd.eContainer, SocketListenTmpl, index,feature)
+			ConnectStatement: checkIfTemplateExists(cmd.eContainer, null, index,feature)
+			PyList: checkIfTemplateExists(cmd.eContainer, ListDeclTmpl, index,feature)
+			Variable: checkIfTemplateExists(cmd.eContainer, null, index,feature)
+			Loop: checkIfTemplateExists(cmd.eContainer, LoopTmpl, index,feature)
+		}
+	}
+
+	def void checkIfTemplateExists(EObject object, Class<? extends Template> class1, int index, EStructuralFeature feature) {
+		if(object === null) throw new Error("What");
+		if (!(object instanceof Device)) {
+			checkIfTemplateExists(object.eContainer, class1, index,feature);
+			return;
+		}
+		var device = object as Device
+		if (device.deviceType.templates.filter(class1).isEmpty) {
+			error("No template exists for this command", feature, index)
+		}
+	}
+
+	@Check
+	def checkDDLBody(DeviceDefinition ddl) {
+
+		if (!ddl.body.contains("{{IMPORTS}}") || !ddl.body.contains("{{SETUP}}") || !ddl.body.contains("{{PROGRAM}}")) {
+			error('''DDL body must contain {{IMPORTS}}, {{SETUP}} and {{PROGRAM}}''',
+				IoTPackage.eINSTANCE.deviceDefinition_Body)
+		}
+
 		val pattern = "\\{\\{[\\w\\s]*\\}\\}";
 		var regex = Pattern.compile(pattern);
 		var match = regex.matcher(ddl.body);
 		while (match.find()) {
 			val parameter = ddl.body.substring(match.start() + 2, match.end() - 2)
-			if(parameter != "IMPORTS" && parameter != "SETUP" && parameter != "PROGRAM"){
+			if (parameter != "IMPORTS" && parameter != "SETUP" && parameter != "PROGRAM") {
 				error('''Parameter «parameter» not valid''', IoTPackage.eINSTANCE.deviceDefinition_Body)
 			}
 		}

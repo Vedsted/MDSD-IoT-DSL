@@ -1,4 +1,4 @@
-external mean  
+external mean
 external log
 connectionConfig Wifi{
 	type:WLAN
@@ -12,7 +12,7 @@ iot device Cup {
 	list tempss   
 	
 	every 10 MILLISECONDS{ 
-		read sensor LIGHT -> add to tempss
+		read sensor TEMPERATURE -> add to tempss
 	}
 	
 	every 100 MILLISECONDS {
