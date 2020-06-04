@@ -87,3 +87,17 @@ catch (Exception e)
 {
     Console.WriteLine(e.ToString());
 }'
+
+if (condition=COND, cmds=COMMANDS, elsecmds=ELSE):
+use:
+"if({{COND}}):
+	{{COMMANDS}}
+else:
+	{{ELSE}}"
+	
+
+
+
+
+
+

@@ -15,6 +15,8 @@ import org.eclipse.xtext.generator.AbstractGenerator
 import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
 import sdu.mdsd.ioT.*
+import sdu.mdsd.ioT.Comparison
+import sdu.mdsd.ioT.ComparisonOp
 
 /**
  * Generates code from your model files on save.
@@ -24,24 +26,27 @@ import sdu.mdsd.ioT.*
 class IoTGenerator extends AbstractGenerator {
 	Device currentDevice;
 	List<String> usedSetups;
+
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		// var model = resource.allContents.filter(Model).toList
 		for (dev : resource.allContents.filter(Device).toList) {
 			fsa.generateFile('''«dev.name»/«dev.deviceType.fileName»''', dev.convertDevice)
 		}
 	}
+
 	def convertDevice(Device device) {
 		currentDevice = device
 		usedSetups = new ArrayList<String>()
 		var importString = buildImports(device)
 		var programString = buildProgram(device)
 
-		var string =  device.deviceType.body;
+		var string = device.deviceType.body;
 		string = string.cleverReplace("{{IMPORTS}}", importString)
 		string = string.cleverReplace("{{SETUP}}", buildSetups())
 		string = string.cleverReplace("{{PROGRAM}}", programString)
 		return string
 	}
+
 	def buildImports(Device device) {
 		// TODO ideally only import things used in the program, but you know
 		var imports = device.deviceType.templates.filter[body.imports !== null].map[body.imports].toList
@@ -54,6 +59,7 @@ class IoTGenerator extends AbstractGenerator {
 		// Return distinct list to string
 		return strings.stream.distinct.collect(Collectors.toList()).join("\n")
 	}
+
 	def buildSetups() {
 		var sb = new StringBuilder();
 		for (setup : usedSetups.stream.distinct().collect(Collectors.toList)) {
@@ -62,6 +68,7 @@ class IoTGenerator extends AbstractGenerator {
 		}
 		return sb.toString()
 	}
+
 	def buildProgram(Device device) {
 		var sb = new StringBuilder()
 		var program = device.program
@@ -88,23 +95,27 @@ class IoTGenerator extends AbstractGenerator {
 				klass = WlanTmpl
 			}
 			ListenStatement: {
-				
+
 				params.put("ip", command.ip)
 				params.put("port", command.port.toString())
 				params.put("commands", command.body.buildCommand)
-			klass = SocketListenTmpl
+				klass = SocketListenTmpl
 			}
 			VarOrList: {
 				switch (command) {
 					Variable: {
-						throw new Exception("NOT IMPLEMENTED YET")
+						params.put("name", command.name)
+						if (command.value !== null) {
+							params.put("value", command.value.buildCommand)
+							klass = VariableWithInstantiationTmpl
+						} else {
+							klass = VariableTmpl
+						}
 					}
 					PyList: {
 						params.put("name", command.name);
 						klass = ListDeclTmpl
 					}
-					default:
-						throw new Exception("NOT A VAR OR LIST")
 				}
 			}
 			Loop: {
@@ -118,7 +129,7 @@ class IoTGenerator extends AbstractGenerator {
 				throw new Exception("NOT IMPLEMENTED YET")
 			}
 		}
-		doSetup(klass,params)
+		doSetup(klass, params)
 		return getUseCodeFor(klass, params)
 	}
 
@@ -170,9 +181,91 @@ class IoTGenerator extends AbstractGenerator {
 				params.put("method", command.method.name)
 				klass = ExternalTmpl
 			}
+			LEDAction: {
+				if (command.state == "ON")
+					params.put("hex", "0xFFFFFF")
+				else
+					params.put("hex", "0x000000")
+				klass = LEDTmpl
+			}
+			IfStatement: {
+				params.put("condition", command.condition.buildCondition)
+				params.put("cmds", command.commands.buildCommands)
+				params.put("elsecmds", command.elseBlock.commands.buildCommands)
+				klass = IfStatementTmpl
+			}
+			ReadConnection: {
+			}
+			ReadVariable: {
+				params.put("name", command.value.name)
+				klass = ReadVariableTmpl
+			}
+			True: {
+				klass = TrueTmpl
+			}
+			False: {
+				klass = FalseTmpl
+			}
+			IntExpression: {
+				params.put("val", command.value.toString())
+				klass = IntTmpl
+			}
+			VarAccess: {
+				params.put("name", command.variableName.name)
+				klass = ReadVariableTmpl
+			}
 		}
-				doSetup(klass,params)
+		doSetup(klass, params)
 		return getUseCodeFor(klass, params)
+	}
+
+	def String buildCondition(Comparison comparison) {
+		var params = new HashMap<String, String>()
+		var Class<? extends Template> klass;
+		switch (comparison) {
+			OR: {
+				params.put("val1", comparison.left.buildCondition)
+				params.put("val2", comparison.right.buildCondition)
+				klass = OrTmpl
+			}
+			AND: {
+				params.put("val1", comparison.left.buildCondition)
+				params.put("val2", comparison.right.buildCondition)
+				klass = AndTmpl
+			}
+			EQL: {
+				params.put("left", comparison.left.buildCondition)
+				params.put("right", comparison.right.buildCondition)
+				params.put("op", comparison.op.buildOperator)
+				klass= EqlTmpl
+			}
+			ItemVariable: {
+				params.put("varname", comparison.value.name)
+				klass = ItemVariableTmpl
+			}
+			ItemBool: {
+				params.put("val", comparison.value.buildCommand)
+				klass = ItemBoolTmpl
+			}
+			ItemInt: {
+				params.put("val", comparison.value.toString)
+				klass = ItemIntTmpl
+			}
+		}
+
+		doSetup(klass, params)
+		return getUseCodeFor(klass, params)
+	}
+
+	def String buildOperator(ComparisonOp op) {
+		switch (op) {
+			EQ: return getUseCodeFor(EqualOpTmpl, new HashMap<String, String>())
+			NE: return getUseCodeFor(NotEqualTmpl, new HashMap<String, String>())
+			LT: return getUseCodeFor(LessThanTmpl, new HashMap<String, String>())
+			GT: return getUseCodeFor(GreaterThanTmpl, new HashMap<String, String>())
+			GE: return getUseCodeFor(GreatThanEqualTmpl, new HashMap<String, String>())
+			LE: return getUseCodeFor(LessThanEqualTmpl, new HashMap<String, String>())
+		}
 	}
 
 	def doSetup(Class<? extends Template> class1, Map<String, String> paramsMap) {
@@ -213,7 +306,7 @@ class IoTGenerator extends AbstractGenerator {
 		}
 		if (params === null)
 			return codeString
-		//var paramList = params.replace('(', '').replace(')', '').split(',').map[trim()];
+		// var paramList = params.replace('(', '').replace(')', '').split(',').map[trim()];
 		for (paramObj : params) {
 			var param = paramObj.name
 			var newValue = paramsMap.get(paramObj.meaning);

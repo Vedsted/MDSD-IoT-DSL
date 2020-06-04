@@ -1,6 +1,6 @@
 devicetype iot "main.py": 
 "{{IMPORTS}}
- {{SETUP}} 
+{{SETUP}} 
 
 {{PROGRAM}}
 "
@@ -91,3 +91,63 @@ socket{{TARGET_DEVICE}}.setblocking(True)
 socket{{TARGET_DEVICE}}.connect(('{{IP}}', {{PORT}}))"
 		use:
 'socket{{TARGET_DEVICE}}.send(bytes(str(value), "utf8"))'
+
+
+if (condition=COND, cmds=COMMANDS, elsecmds=ELSE):
+use:
+"if({{COND}}):
+	{{COMMANDS}}
+else:
+	{{ELSE}}"
+	
+led (hex=COLOR):
+import: "import pycom"
+setup: "pycom.heartbeat(False)"
+use: "pycom.rgbled({{COLOR}})"
+
+trueLiteral :
+	use:
+		"True"
+
+eql (left=A, op=OP, right=B):
+	use:
+	"{{A}} {{OP}} {{B}}"
+
+andop (val1=A, val2=B):
+	use: "{{A}} and {{B}}"
+ibool (val=VALUE): 
+	use:
+	"{{VALUE}}"
+	
+ivar (varname=VAR):
+	use:"{{VAR}}"
+iint (val=VALUE): 
+	use:
+	"{{VALUE}}"
+	
+gtop:
+	use: ">"
+	
+neqlop :
+	use: "!="
+
+vardecl (name=NAME):
+	use:
+	 "{{NAME}} = None"
+	 
+variableInstantiation (name=NAME, val=VALUE):
+	use: "{{NAME}} = {{VALUE}}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+

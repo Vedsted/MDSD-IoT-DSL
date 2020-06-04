@@ -3,12 +3,9 @@ grammar sdu.mdsd.IoT with org.eclipse.xtext.common.Terminals
 import "http://www.eclipse.org/emf/2002/Ecore" as ecore
 generate ioT "http://www.mdsd.sdu/IoT"
 
-
-
 Model:
 	deviceTypes+=DeviceDefinition*
 	system=IoTSystem;
-	
 
 DeviceDefinition:
 	'devicetype' name=ID fileName=STRING ':'
@@ -17,7 +14,105 @@ DeviceDefinition:
 
 Template:
 	WlanTmpl | SocketListenTmpl | SensorTmpl | SocketConnectTmpl | LoopTmpl | ArrowTmpl | ListDeclTmpl | ListAddTmpl |
-	ListClearTmpl | ExternalTmpl;
+	ListClearTmpl | ExternalTmpl | ToVarTmpl | LEDTmpl | IfStatementTmpl | SerialReadTmpl | ReadVariableTmpl | TrueTmpl |
+	FalseTmpl |
+	IntTmpl | VariableTmpl |VariableWithInstantiationTmpl| OrTmpl | AndTmpl | EqlTmpl | GreaterThanTmpl | LessThanTmpl | LessThanEqualTmpl | GreatThanEqualTmpl | EqualOpTmpl | NotEqualTmpl|
+	ItemVariableTmpl | ItemIntTmpl| ItemBoolTmpl;
+
+VariableWithInstantiationTmpl:
+	"variableInstantiation" params=TmplParams? ':'
+	body=TmplBody
+;
+
+ItemBoolTmpl:
+		'ibool' params=TmplParams? ':'
+	body=TmplBody;
+
+ItemIntTmpl:
+		'iint' params=TmplParams? ':'
+	body=TmplBody;
+
+ItemVariableTmpl:
+		'ivar' params=TmplParams? ':'
+	body=TmplBody;
+
+NotEqualTmpl:
+	
+	'neqlop' params=TmplParams? ':'
+	body=TmplBody;
+
+EqualOpTmpl:
+		'eqlop' params=TmplParams? ':'
+	body=TmplBody;
+
+GreatThanEqualTmpl:
+		'gteop' params=TmplParams? ':'
+	body=TmplBody;
+
+LessThanEqualTmpl:
+	
+	'lteop' params=TmplParams? ':'
+	body=TmplBody;
+
+LessThanTmpl:
+	
+	'ltop' params=TmplParams? ':'
+	body=TmplBody;
+
+GreaterThanTmpl:
+	
+	'gtop' params=TmplParams? ':'
+	body=TmplBody;
+
+EqlTmpl:
+	
+	'eql' params=TmplParams? ':'
+	body=TmplBody;
+
+AndTmpl:
+	
+	'andop' params=TmplParams? ':'
+	body=TmplBody;
+
+OrTmpl:
+		'orop' params=TmplParams? ':'
+	body=TmplBody;
+
+FalseTmpl:
+	'falseLiteral' params=TmplParams? ':'
+	body=TmplBody;
+
+TrueTmpl:
+	'trueLiteral' params=TmplParams? ':'
+	body=TmplBody;
+
+VariableTmpl:
+	'vardecl' params=TmplParams? ':'
+	body=TmplBody;
+
+IntTmpl:
+	'int' params=TmplParams? ':'
+	body=TmplBody;
+
+ReadVariableTmpl:
+	'varread' params=TmplParams? ':'
+	body=TmplBody;
+
+SerialReadTmpl:
+	'serialread' params=TmplParams? ':'
+	body=TmplBody;
+
+IfStatementTmpl:
+	'if' params=TmplParams? ':'
+	body=TmplBody;
+
+LEDTmpl:
+	'led' params=TmplParams? ':'
+	body=TmplBody;
+
+ToVarTmpl:
+	'varassign' params=TmplParams? ':'
+	body=TmplBody;
 
 SocketConnectTmpl:
 	'socketconnection' params=TmplParams? ':'
@@ -37,9 +132,7 @@ TmplParams:
 	'(' params+=TmplParam (',' params+=TmplParam)* ')';
 
 TmplParam:
-	meaning=ID '=' name=ID
-;
-	
+	meaning=ID '=' name=ID;
 
 ExternalTmpl:
 	'external' params=TmplParams? ':'
@@ -79,8 +172,6 @@ IoTSystem:
 	configs+=ConnectionConfig*
 	devices+=Device*;
 
-
-
 terminal IP returns ecore::EString:
 	INT '.' INT '.' INT '.' INT; // IP
 terminal WINDOWS_SERIAL returns ecore::EString:
@@ -93,7 +184,6 @@ ExternalDeclaration:
 /*
  * Configurations
  */
-
 ConnectionConfig returns Config:
 	{ConnectionConfig} 'connectionConfig' name=ID '{'
 	'type' ':' type=ConfigType
@@ -231,7 +321,7 @@ Item returns Comparison:
 	Parenthasis |
 	{ItemVariable} value=[Variable] |
 	{ItemInt} value=INT |
-	{ItemBool} value=Bool;
+	{ItemBool} value=BoolExpression;
 
 Parenthasis returns Comparison:
 	'(' Comparison ')';
