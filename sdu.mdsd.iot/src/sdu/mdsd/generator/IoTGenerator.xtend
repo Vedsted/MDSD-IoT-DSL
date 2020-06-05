@@ -249,12 +249,19 @@ class IoTGenerator extends AbstractGenerator {
 		switch comp {
 			AND: '''«comp.left.convComparison» and «comp.right.convComparison»'''
 			EQL: '''«comp.left.convComparison» «comp.op.op» «comp.right.convComparison»'''
-			ItemBool: '''«comp.value»'''
+			ItemBool: '''«comp.value.convBool»'''
 			ItemInt: '''«comp.value»'''
 			ItemVariable: '''«comp.value.name»'''
 			OR: '''«comp.left.convComparison» or «comp.right.convComparison»'''
 		}
 
+	}
+	
+	def CharSequence convBool(Bool b) {
+		switch b {
+			True: '''True'''
+			False: '''False'''
+		}
 	}
 
 	def convExpRight(ExpressionRight right) {
