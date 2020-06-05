@@ -4,6 +4,42 @@ devicetype controller "controller.py" :
 {{SETUP}}
 
 {{PROGRAM}}"
+	arrow (left=LEFT, right=RIGHT):
+		use:
+"def expLeft{{UUID}}():
+	{{LEFT}}
+	
+def expRight{{UUID}}(value):
+	{{RIGHT}}
+
+result = expLeft{{UUID}}()
+expRight{{UUID}}(result)"
+
+	loop (time=TSECONDS, commands=COMMANDS):
+		use:
+"def th_func{{UUID}}(action):
+	while True:
+		time.sleep({{TSECONDS}})
+		action()
+
+def loop{{UUID}}():
+	{{COMMANDS}}
+
+_thread.start_new_thread(th_func{{UUID}}, (loop{{UUID}},))" 
+
+serialread (baud=B, parity=P, bytesize=BS, bus=A, stopbits=SB,target=TGT):
+import:
+"import serial"
+setup:
+"serial{{TGT}}= serial.Serial(
+					    port='{{A}}',
+					    baudrate={{B}},
+					    parity={{P}},
+					    stopbits={{SB}},
+					    bytesize={{BS}}
+					)"
+use:
+"return serial{{TGT}}.readline()"
 	external (method=NAME):
 		use:
 "externals.{{NAME}}(value)"
@@ -17,7 +53,7 @@ print('Socket created')
 
 # Bind socket to local host and port
 try:
-    server.bind((‘{{IPe}}’, {{PORT}}))
+    server.bind(({{IPe}}, {{PORT}}))
 except socket.error as msg:
     print('Bind failed. Error Code : ' + msg + ' Message ' + str(msg))
     sys.exit()

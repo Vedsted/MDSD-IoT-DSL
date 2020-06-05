@@ -1,15 +1,23 @@
 external mean
-external log
+external log 
 connectionConfig Wifi{
 	type:WLAN
 	"ssid":"Network2GHz"
 	"password": "kalenderlys"
-	 
+} 
+connectionConfig Serial{
+	type: SERIAL
+	"baud":"115200"
+	"parity": "None"
+	"bytesize" :"8"
+	"stopbits" :"1"
 } 
 
-iot device Cup {
+iot device Cup { 
 	setup Wifi
 	list tempss   
+	
+	connect to Server on '0' using Serial
 	
 	every 10 MILLISECONDS{ 
 		read sensor TEMPERATURE -> add to tempss
@@ -23,8 +31,11 @@ iot device Cup {
 }  
 
 
-csController device Server{ 
-	 
-	listen on 192.168.0.15:8000 -> log of value
+controller device Server{  
+	connect to Cup on '0' using Serial
+	every 100 MILLISECONDS {
+	
+	read from Cup -> log of value
+	}
 	
 }

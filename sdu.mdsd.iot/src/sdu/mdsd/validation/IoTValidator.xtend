@@ -32,13 +32,13 @@ class IoTValidator extends AbstractIoTValidator {
 
 	@Check
 	def checkThatTemplateExists2(ListenStatement prg) {
-		checkTemplates(prg.body, 0,IoTPackage.eINSTANCE.listenStatement_Body)
+		checkTemplates(prg.body, 0, IoTPackage.eINSTANCE.listenStatement_Body)
 	}
 
 	@Check
 	def checkThatTemplateExists3(Block prg) {
 		for (var i = 0; i < prg.commands.length; i++) {
-			checkTemplates(prg.commands.get(i), i,IoTPackage.eINSTANCE.block_Commands)
+			checkTemplates(prg.commands.get(i), i, IoTPackage.eINSTANCE.block_Commands)
 		}
 	}
 
@@ -47,109 +47,153 @@ class IoTValidator extends AbstractIoTValidator {
 		checkTemplates(prg.left, 0, IoTPackage.eINSTANCE.arrowCommand_Left)
 		checkTemplates(prg.right, 0, IoTPackage.eINSTANCE.arrowCommand_Right)
 	}
-	
+
 	@Check
 	def checkThatTemplateExists5(Loop prg) {
 		for (var i = 0; i < prg.command.length; i++) {
 			checkTemplates(prg.command.get(i), i, IoTPackage.eINSTANCE.loop_Command)
 		}
 	}
-	
-	
+
 	@Check
 	def checkThatTemplateExists6(IfStatement prg) {
 
-		checkTemplates(prg.condition, 0 , IoTPackage.eINSTANCE.ifStatement_Condition)
+		checkTemplates(prg.condition, 0, IoTPackage.eINSTANCE.ifStatement_Condition)
 		for (var i = 0; i < prg.commands.length; i++) {
-			checkTemplates(prg.commands.get(i), i,IoTPackage.eINSTANCE.ifStatement_Commands)
+			checkTemplates(prg.commands.get(i), i, IoTPackage.eINSTANCE.ifStatement_Commands)
 		}
-		
+
 	}
-		@Check
+
+	@Check
 	def checkThatTemplateExists7(ElseBlock prg) {
 		for (var i = 0; i < prg.commands.length; i++) {
 			checkTemplates(prg.commands.get(i), i, IoTPackage.eINSTANCE.elseBlock_Commands)
 		}
-		
+
 	}
+
 	@Check
 	def checkThatTemplateExists8(EQL prg) {
 		checkTemplates(prg.left, 0, IoTPackage.eINSTANCE.EQL_Left)
 		checkTemplates(prg.right, 0, IoTPackage.eINSTANCE.EQL_Right)
 		checkTemplates(prg.op, 0, IoTPackage.eINSTANCE.EQL_Op)
-		
+
 	}
 
-	def checkTemplates(Command cmd, int index,EStructuralFeature feature) {
+	def checkTemplates(Command cmd, int index, EStructuralFeature feature) {
 		switch (cmd) {
-			SendCommand: checkIfTemplateExists(cmd.eContainer, SocketConnectTmpl, index,feature)
-			AddToList: checkIfTemplateExists(cmd.eContainer, ListAddTmpl, index,feature)
-			ToVar: checkIfTemplateExists(cmd.eContainer, ToVarTmpl, index,feature)
-			ExternalRight: checkIfTemplateExists(cmd.eContainer, ExternalTmpl, index,feature)
-			ClearListAction: checkIfTemplateExists(cmd.eContainer, ListClearTmpl, index,feature)
-			LEDAction: checkIfTemplateExists(cmd.eContainer, LEDTmpl, index,feature)
-			ArrowCommand: checkIfTemplateExists(cmd.eContainer, ArrowTmpl, index,feature)
-			IfStatement: checkIfTemplateExists(cmd.eContainer, IfStatementTmpl, index,feature)
-			ExternalOf: checkIfTemplateExists(cmd.eContainer, ExternalTmpl, index,feature)
-			ReadSensor: checkIfTemplateExists(cmd.eContainer, SensorTmpl, index,feature)
-			ReadConnection: checkIfTemplateExists(cmd.eContainer, SerialReadTmpl, index,feature)
-			ReadVariable: checkIfTemplateExists(cmd.eContainer, ReadVariableTmpl, index,feature)
-			True: checkIfTemplateExists(cmd.eContainer, TrueTmpl, index,feature)
-			False: checkIfTemplateExists(cmd.eContainer, FalseTmpl, index,feature)
-			IntExpression: checkIfTemplateExists(cmd.eContainer, IntTmpl, index,feature)
-			VarAccess: checkIfTemplateExists(cmd.eContainer, VariableTmpl, index,feature)
+			SendCommand: {
+				var container = cmd.eContainer
+
+				while (container !== null && !(container instanceof Device))
+					container = container.eContainer
+
+				var Device device
+
+				if (container === null)
+					throw new Error("this shouldnt happen")
+				else
+					device = container as Device
+
+				var connectionList = device.program.topLevelCommands.filter(ConnectStatement).filter([ c |
+					c.device == cmd.target
+				]).toList
+				var connection = connectionList.length > 0 ? connectionList.get(0) : cmd.target.eAllContents.filter(
+						ListenStatement).toList.get(0)
+
+				switch (connection) {
+					ConnectStatement: {
+						checkIfTemplateExists(cmd.eContainer, SerialWriteTmpl, index, feature)
+					}
+					ListenStatement:
+						checkIfTemplateExists(cmd.eContainer, SocketConnectTmpl, index, feature)
+				}
+			}
+			AddToList:
+				checkIfTemplateExists(cmd.eContainer, ListAddTmpl, index, feature)
+			ToVar:
+				checkIfTemplateExists(cmd.eContainer, ToVarTmpl, index, feature)
+			ExternalRight:
+				checkIfTemplateExists(cmd.eContainer, ExternalTmpl, index, feature)
+			ClearListAction:
+				checkIfTemplateExists(cmd.eContainer, ListClearTmpl, index, feature)
+			LEDAction:
+				checkIfTemplateExists(cmd.eContainer, LEDTmpl, index, feature)
+			ArrowCommand:
+				checkIfTemplateExists(cmd.eContainer, ArrowTmpl, index, feature)
+			IfStatement:
+				checkIfTemplateExists(cmd.eContainer, IfStatementTmpl, index, feature)
+			ExternalOf:
+				checkIfTemplateExists(cmd.eContainer, ExternalTmpl, index, feature)
+			ReadSensor:
+				checkIfTemplateExists(cmd.eContainer, SensorTmpl, index, feature)
+			ReadConnection:
+				checkIfTemplateExists(cmd.eContainer, SerialReadTmpl, index, feature)
+			ReadVariable:
+				checkIfTemplateExists(cmd.eContainer, ReadVariableTmpl, index, feature)
+			True:
+				checkIfTemplateExists(cmd.eContainer, TrueTmpl, index, feature)
+			False:
+				checkIfTemplateExists(cmd.eContainer, FalseTmpl, index, feature)
+			IntExpression:
+				checkIfTemplateExists(cmd.eContainer, IntTmpl, index, feature)
+			VarAccess:
+				checkIfTemplateExists(cmd.eContainer, VariableTmpl, index, feature)
 		}
 	}
-	
-	def checkTemplates(Comparison cmd, int index,EStructuralFeature feature) {
+
+	def checkTemplates(Comparison cmd, int index, EStructuralFeature feature) {
 		switch (cmd) {
-			OR: checkIfTemplateExists(cmd.eContainer, OrTmpl, index,feature)
-			AND: checkIfTemplateExists(cmd.eContainer, AndTmpl, index,feature)
-			EQL: checkIfTemplateExists(cmd.eContainer, EqlTmpl, index,feature)
-			
-			ItemVariable: checkIfTemplateExists(cmd.eContainer, ItemVariableTmpl, index,feature)
-			ItemInt: checkIfTemplateExists(cmd.eContainer, ItemIntTmpl, index,feature)
-			ItemBool: checkIfTemplateExists(cmd.eContainer, ItemBoolTmpl, index,feature)
-			
+			OR: checkIfTemplateExists(cmd.eContainer, OrTmpl, index, feature)
+			AND: checkIfTemplateExists(cmd.eContainer, AndTmpl, index, feature)
+			EQL: checkIfTemplateExists(cmd.eContainer, EqlTmpl, index, feature)
+			ItemVariable: checkIfTemplateExists(cmd.eContainer, ItemVariableTmpl, index, feature)
+			ItemInt: checkIfTemplateExists(cmd.eContainer, ItemIntTmpl, index, feature)
+			ItemBool: checkIfTemplateExists(cmd.eContainer, ItemBoolTmpl, index, feature)
 		}
 	}
-	
-	def checkTemplates(ComparisonOp cmd, int index,EStructuralFeature feature) {
-		switch(cmd){
-			GT: checkIfTemplateExists(cmd.eContainer, GreaterThanTmpl, index,feature)
-			LT: checkIfTemplateExists(cmd.eContainer, LessThanTmpl, index,feature)
-			LE: checkIfTemplateExists(cmd.eContainer, LessThanEqualTmpl, index,feature)
-			GE: checkIfTemplateExists(cmd.eContainer, GreatThanEqualTmpl, index,feature)
-			EQ: checkIfTemplateExists(cmd.eContainer, EqualOpTmpl, index,feature)
-			NE: checkIfTemplateExists(cmd.eContainer, NotEqualTmpl, index,feature)
-		}	
+
+	def checkTemplates(ComparisonOp cmd, int index, EStructuralFeature feature) {
+		switch (cmd) {
+			GT: checkIfTemplateExists(cmd.eContainer, GreaterThanTmpl, index, feature)
+			LT: checkIfTemplateExists(cmd.eContainer, LessThanTmpl, index, feature)
+			LE: checkIfTemplateExists(cmd.eContainer, LessThanEqualTmpl, index, feature)
+			GE: checkIfTemplateExists(cmd.eContainer, GreatThanEqualTmpl, index, feature)
+			EQ: checkIfTemplateExists(cmd.eContainer, EqualOpTmpl, index, feature)
+			NE: checkIfTemplateExists(cmd.eContainer, NotEqualTmpl, index, feature)
+		}
 	}
 
 	def checkTemplates(TopLevelCommand cmd, int index, EStructuralFeature feature) {
 		switch (cmd) {
-			WifiStatement: checkIfTemplateExists(cmd.eContainer, WlanTmpl, index,feature)
-			ListenStatement: checkIfTemplateExists(cmd.eContainer, SocketListenTmpl, index,feature)
-			ConnectStatement: checkIfTemplateExists(cmd.eContainer, null, index,feature)
-			PyList: checkIfTemplateExists(cmd.eContainer, ListDeclTmpl, index,feature)
+			WifiStatement:
+				checkIfTemplateExists(cmd.eContainer, WlanTmpl, index, feature)
+			ListenStatement:
+				checkIfTemplateExists(cmd.eContainer, SocketListenTmpl, index, feature)
+			IdkList:
+				checkIfTemplateExists(cmd.eContainer, ListDeclTmpl, index, feature)
 			Variable: {
-				if(cmd.value === null)
-					checkIfTemplateExists(cmd.eContainer, VariableTmpl, index,feature)
+				if (cmd.value === null)
+					checkIfTemplateExists(cmd.eContainer, VariableTmpl, index, feature)
 				else
 					checkIfTemplateExists(cmd.eContainer, VariableWithInstantiationTmpl, index, feature)
-				}
-			Loop: checkIfTemplateExists(cmd.eContainer, LoopTmpl, index,feature)
+			}
+			Loop:
+				checkIfTemplateExists(cmd.eContainer, LoopTmpl, index, feature)
 		}
 	}
 
-	def void checkIfTemplateExists(EObject object, Class<? extends Template> class1, int index, EStructuralFeature feature) {
+	def void checkIfTemplateExists(EObject object, Class<? extends Template> class1, int index,
+		EStructuralFeature feature) {
 		if(object === null) throw new Error("What");
 		if (!(object instanceof Device)) {
-			checkIfTemplateExists(object.eContainer, class1, index,feature);
+			checkIfTemplateExists(object.eContainer, class1, index, feature);
 			return;
 		}
 		var device = object as Device
 		if (device.deviceType.templates.filter(class1).isEmpty) {
-			error("No template exists for "+class1.name, feature, index)
+			error("No template exists for " + class1.name, feature, index)
 		}
 	}
 

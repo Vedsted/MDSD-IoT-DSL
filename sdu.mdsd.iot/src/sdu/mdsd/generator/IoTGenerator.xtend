@@ -79,8 +79,6 @@ class IoTGenerator extends AbstractGenerator {
 		return sb.toString()
 	}
 
-	var loopCount = 0;
-
 	def String generateCode(TopLevelCommand command) {
 		var params = new HashMap<String, String>()
 		var Class<? extends Template> klass;
@@ -112,7 +110,7 @@ class IoTGenerator extends AbstractGenerator {
 							klass = VariableTmpl
 						}
 					}
-					PyList: {
+					IdkList: {
 						params.put("name", command.name);
 						klass = ListDeclTmpl
 					}
@@ -120,14 +118,12 @@ class IoTGenerator extends AbstractGenerator {
 			}
 			Loop: {
 				params.put("time", command.convertSleepTime)
-				params.put("UUID", loopCount.toString())
-				loopCount++;
 				params.put("commands", command.command.buildCommands())
 				klass = LoopTmpl
 			}
-			ConnectStatement: {
-				throw new Exception("NOT IMPLEMENTED YET")
-			}
+//			ConnectStatement: {
+//				//throw new Exception("NOT IMPLEMENTED YET")
+//			}
 		}
 		doSetup(klass, params)
 		return getUseCodeFor(klass, params)
@@ -171,11 +167,37 @@ class IoTGenerator extends AbstractGenerator {
 				klass = ListAddTmpl
 			}
 			SendCommand: {
-				params.put("ip", command.target.program.topLevelCommands.filter(ListenStatement).get(0).ip)
-				params.put("port",
-					command.target.program.topLevelCommands.filter(ListenStatement).get(0).port.toString())
-				params.put("target", command.target.name)
-				klass = SocketConnectTmpl
+				var connectionList = this.currentDevice.program.topLevelCommands.filter(ConnectStatement).filter([
+					device == command.target
+				]).toList
+				var connection = connectionList.length > 0
+						? connectionList.get(0)
+						: command.target.eAllContents.filter(ListenStatement).toList.get(0)
+
+				switch (connection) {
+					ConnectStatement: {
+						params.put("baud", connection.configuration?.declarations?.extractDeclaration("baud")?.value)
+						params.put("stopbits", connection.configuration?.declarations?.extractDeclaration("stopbits")?.value)
+						params.put("parity",connection.configuration?.declarations?.extractDeclaration("parity")?.value)
+						params.put("bytesize",connection.configuration?.declarations?.extractDeclaration("bytesize")?.value)
+						params.put("bus",connection.address.value)
+						params.put("target",command.target.name)
+						
+						klass=SerialWriteTmpl
+					}
+					ListenStatement: {
+						params.put("ip", command.target.program.topLevelCommands.filter(ListenStatement).get(0).ip)
+						params.put("port",
+							command.target.program.topLevelCommands.filter(ListenStatement).get(0).port.toString())
+						params.put("target", command.target.name)
+						klass = SocketConnectTmpl
+					}
+					default: {
+						throw new Exception(
+							"No connection config found. Requires either 1 serial or 1 listen statement")
+					}
+				}
+
 			}
 			ExternalRight: {
 				params.put("method", command.method.name)
@@ -194,11 +216,36 @@ class IoTGenerator extends AbstractGenerator {
 				params.put("elsecmds", command.elseBlock.commands.buildCommands)
 				klass = IfStatementTmpl
 			}
-			ReadConnection: {
-			}
 			ReadVariable: {
 				params.put("name", command.value.name)
 				klass = ReadVariableTmpl
+			}
+			ReadConnection:{
+				var connectionList = this.currentDevice.program.topLevelCommands.filter(ConnectStatement).filter([
+					device == command.source
+				]).toList
+				var connection = connectionList.length > 0
+						? connectionList.get(0)
+						: command.source.eAllContents.filter(ListenStatement).toList.get(0)
+				switch (connection) {
+					ConnectStatement: {
+						params.put("baud", connection.configuration?.declarations?.extractDeclaration("baud")?.value)
+						params.put("stopbits", connection.configuration?.declarations?.extractDeclaration("stopbits")?.value)
+						params.put("parity",connection.configuration?.declarations?.extractDeclaration("parity")?.value)
+						params.put("bytesize",connection.configuration?.declarations?.extractDeclaration("bytesize")?.value)
+						
+						params.put("bus",connection.address.value)
+						params.put("target",command.source.name)
+						klass=SerialReadTmpl
+					}
+					ListenStatement: {
+						throw new Exception("Read from networked device replaced by listen statement")
+					}
+					default: {
+						throw new Exception(
+							"No connection config found. Requires either 1 serial or 1 listen statement")
+					}
+				}
 			}
 			True: {
 				klass = TrueTmpl
@@ -237,7 +284,7 @@ class IoTGenerator extends AbstractGenerator {
 				params.put("left", comparison.left.buildCondition)
 				params.put("right", comparison.right.buildCondition)
 				params.put("op", comparison.op.buildOperator)
-				klass= EqlTmpl
+				klass = EqlTmpl
 			}
 			ItemVariable: {
 				params.put("varname", comparison.value.name)
@@ -269,21 +316,21 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def doSetup(Class<? extends Template> class1, Map<String, String> paramsMap) {
-
+		if(class1===null)
+			return
 		var templates = currentDevice.deviceType.templates.filter(class1).toList
-
 		for (impl : templates) {
 			var setup = impl.body.setup;
 			if (setup !== null) {
-
 				var setUpCode = setup.insertParameters(impl.params?.params, paramsMap)
 				usedSetups.add(setUpCode);
 			}
 		}
-
 	}
 
 	def getUseCodeFor(Class<? extends Template> class1, Map<String, String> paramsMap) {
+		if(class1===null)
+			return ""
 		var sb = new StringBuilder();
 		var templates = currentDevice.deviceType.templates.filter(class1).toList
 

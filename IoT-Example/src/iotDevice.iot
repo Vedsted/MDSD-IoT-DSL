@@ -82,6 +82,9 @@ lightsensor = LTR329ALS01(integration=integration_time, rate=measurement_rate, g
 lux = (luxTuple[0]+luxTuple[1])/2
 return lux"
  
+ serialwrite (baud=B, parity=P, bytesize=BS, bus=A, stopbits=SB,target=TGT):
+use:
+"print(value)"
 	socketconnection (ip=IP, port=PORT, target=TARGET_DEVICE):
 		import:
 "import socket"

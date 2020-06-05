@@ -14,68 +14,67 @@ DeviceDefinition:
 
 Template:
 	WlanTmpl | SocketListenTmpl | SensorTmpl | SocketConnectTmpl | LoopTmpl | ArrowTmpl | ListDeclTmpl | ListAddTmpl |
-	ListClearTmpl | ExternalTmpl | ToVarTmpl | LEDTmpl | IfStatementTmpl | SerialReadTmpl | ReadVariableTmpl | TrueTmpl |
+	ListClearTmpl | ExternalTmpl | ToVarTmpl | LEDTmpl | IfStatementTmpl | SerialReadTmpl | SerialWriteTmpl |
+	ReadVariableTmpl | TrueTmpl |
 	FalseTmpl |
-	IntTmpl | VariableTmpl |VariableWithInstantiationTmpl| OrTmpl | AndTmpl | EqlTmpl | GreaterThanTmpl | LessThanTmpl | LessThanEqualTmpl | GreatThanEqualTmpl | EqualOpTmpl | NotEqualTmpl|
-	ItemVariableTmpl | ItemIntTmpl| ItemBoolTmpl;
+	IntTmpl | VariableTmpl | VariableWithInstantiationTmpl | OrTmpl | AndTmpl | EqlTmpl | GreaterThanTmpl | LessThanTmpl
+	| LessThanEqualTmpl | GreatThanEqualTmpl | EqualOpTmpl | NotEqualTmpl |
+	ItemVariableTmpl | ItemIntTmpl | ItemBoolTmpl;
+
+SerialWriteTmpl:
+	"serialwrite" params=TmplParams? ':'
+	body=TmplBody;
 
 VariableWithInstantiationTmpl:
 	"variableInstantiation" params=TmplParams? ':'
-	body=TmplBody
-;
+	body=TmplBody;
 
 ItemBoolTmpl:
-		'ibool' params=TmplParams? ':'
+	'ibool' params=TmplParams? ':'
 	body=TmplBody;
 
 ItemIntTmpl:
-		'iint' params=TmplParams? ':'
+	'iint' params=TmplParams? ':'
 	body=TmplBody;
 
 ItemVariableTmpl:
-		'ivar' params=TmplParams? ':'
+	'ivar' params=TmplParams? ':'
 	body=TmplBody;
 
 NotEqualTmpl:
-	
 	'neqlop' params=TmplParams? ':'
 	body=TmplBody;
 
 EqualOpTmpl:
-		'eqlop' params=TmplParams? ':'
+	'eqlop' params=TmplParams? ':'
 	body=TmplBody;
 
 GreatThanEqualTmpl:
-		'gteop' params=TmplParams? ':'
+	'gteop' params=TmplParams? ':'
 	body=TmplBody;
 
 LessThanEqualTmpl:
-	
 	'lteop' params=TmplParams? ':'
 	body=TmplBody;
 
 LessThanTmpl:
-	
 	'ltop' params=TmplParams? ':'
 	body=TmplBody;
 
 GreaterThanTmpl:
-	
 	'gtop' params=TmplParams? ':'
 	body=TmplBody;
 
 EqlTmpl:
-	
 	'eql' params=TmplParams? ':'
 	body=TmplBody;
 
 AndTmpl:
-	
 	'andop' params=TmplParams? ':'
 	body=TmplBody;
 
 OrTmpl:
-		'orop' params=TmplParams? ':'
+	'orop' params=TmplParams? ':'
 	body=TmplBody;
 
 FalseTmpl:
@@ -225,7 +224,7 @@ Address:
 ;
 
 VarOrList:
-	({Variable} 'var' name=ID ('=' value=Expression)? | {PyList} 'list' name=ID);
+	({Variable} 'var' name=ID ('=' value=Expression)? | {IdkList} 'list' name=ID);
 
 Loop:
 	{Loop}
@@ -249,7 +248,7 @@ Action returns Command:
 	LEDAction;
 
 ClearListAction returns Action:
-	{ClearListAction} 'clear' list=[PyList];
+	{ClearListAction} 'clear' list=[IdkList];
 
 LEDAction returns Action:
 	{LEDAction} 'LED' state=('ON' | 'OFF');
@@ -291,7 +290,7 @@ ToVar returns ExpressionRight:
 	{ToVar} 'to' variable=[Variable];
 
 AddToList returns ExpressionRight:
-	{AddToList} 'add' 'to' list=[PyList];
+	{AddToList} 'add' 'to' list=[IdkList];
 
 ExternalRight:
 	method=[ExternalDeclaration] 'of' 'value';
