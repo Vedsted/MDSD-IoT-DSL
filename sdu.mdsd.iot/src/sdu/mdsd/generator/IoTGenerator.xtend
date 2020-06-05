@@ -484,16 +484,18 @@ class IoTGenerator extends AbstractGenerator {
 			KEY = '«map.get('password')»'
 			
 			wlan = WLAN(mode=WLAN.STA)
-			nets = wlan.scan()
-			for net in nets:
-				if net.ssid == SSID:
-					print('Network found!')
-					wlan.connect(net.ssid, auth=(net.sec, KEY), timeout=5000)
-					while not wlan.isconnected():
-						idle() # save power while waiting
-					print('WLAN connection succeeded!')
-					print(wlan.ifconfig()) # Print the connection settings, IP, Subnet mask, Gateway, DNS
-					break
+			while not wlan.isconnected(): # If this check is not here, then the code might just continue executing without being connected to WLAN
+				wlan = WLAN(mode=WLAN.STA)
+				nets = wlan.scan()
+				for net in nets:
+					if net.ssid == SSID:
+						print('Network found!')
+						wlan.connect(net.ssid, auth=(net.sec, KEY), timeout=5000)
+						while not wlan.isconnected():
+							idle() # save power while waiting
+						print('WLAN connection succeeded!')
+						print(wlan.ifconfig()) # Print the connection settings, IP, Subnet mask, Gateway, DNS
+						break
 		'''
 	}
 
