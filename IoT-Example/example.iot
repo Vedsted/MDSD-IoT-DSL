@@ -1,79 +1,86 @@
-external mean("list")
+external ext_length // Calculates the length of a list
+external ext_pop	// Pop the first element of a list
+external ext_isEmpty // Returns a bool indicating an empty list if true
+external ext_print 	// Prints a message
+external ext_avg	// Calculates the average of a list of values
 
-connectionConfig Wifi{
+connectionConfig EdgeWifi {
 	type:WLAN
-	"ssid":"Network2GHz"
-	"password": "kalenderlys"
-	
+	"ssid":"CableBox-9655-2_4Ghz"
+	"password": "connectnow20"
 }
 
-connectionConfig SConfig{
-	type: SERIAL
-	}
-
-iot device Cup {
-	setup Wifi
-	connect to Server on '0' using SConfig
-	list temps
-	var upperBound = 10
-	var lowerBound = 2
-	var index = 1
-	var mean 
+iot device LightSensor {
+	setup EdgeWifi
 	
-	listen on 192.168.0.30:9000 -> {
-		if(index == 1){
-			mean -> to upperBound
-			2 -> to index
-		}else{
-			mean -> to lowerBound
-			1 -> to index
+	list lightLevels
+	var lightLevel
+	var lower = 90
+	var upper = 300
+	var isEmpty = true
+	var NIL
+	
+	/*
+	 * Read light level loop
+	 */
+	every 1 SECONDS {
+		read from LIGHTSENSOR -> to lightLevel
+		ext_print of lightLevel -> to NIL
+		
+		// Record values that are exceeding boundaries
+		if lightLevel > lower && lightLevel < upper{
+			read var lightLevel -> add to lightLevels
 		}
-	  }
-		
-	
-	
-	
-
-	every 10 MILLISECONDS{
-		read from TEMPERATURE -> add to temps
-		
-		
 	}
 	
-	every 100 MILLISECONDS {
-		mean of temps -> to mean
-		if(mean > lowerBound AND mean < upperBound){
+	/*
+	 * Send to fog controller loop
+	 */
+	always {
+		ext_isEmpty of lightLevels -> to isEmpty
+		
+		if isEmpty == false {
+			LED ON // Indicate network activity
+			ext_pop of lightLevels -> send to FogController
 			LED OFF
-		}else{
-			LED ON
-		}
-		
-		read var mean -> send to Server
+		}		
 	}
+}
+
+controller device FogController {
 	
+	list lightLevels
+	var listLength
+	var threshold = 10
+	var lightLevelAvg
+	var NIL
+	
+	/*
+	 * Setup server for communicating with edge-nodes
+	 */
+	listen on 192.168.0.3:8123 -> add to lightLevels
+	
+	
+	/*
+	 * Thread that calculates avg and sends it to the cloud
+	 */
+	always {
+		ext_length of lightLevels -> to listLength
+		
+		if listLength >= threshold {
+			ext_print of listLength -> to NIL
+			ext_avg of lightLevels -> to lightLevelAvg
+			read var lightLevelAvg -> send to CloudService
+			clear lightLevels
+		}
+	}
 }
 
 
-controller device Server{
+controller device CloudService {
 	
-	connect to Cup on COM7 using SConfig
-	list items 
-	var index = 1
-	listen on 192.168.0.16:8000 -> add to items 
-	
-	
-	every 20 SECONDS{
-		if (index == 1){
-		// Coffee limits
-		
-		80 -> send to Cup
-		60 -> send to Cup
-		2 -> to index
-		} else{
-			// room temperature limits
-			40-> send to Cup
-			1-> send to Cup
-		}
-	}
-	
+	/*
+	 * Setup server for communicating with fog-nodes
+	 */
+	listen on 192.168.0.3:8124 -> ext_print of value
 }

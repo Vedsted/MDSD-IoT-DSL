@@ -1,0 +1,78 @@
+external mean
+
+connectionConfig Wifi{
+	type:WLAN
+	"ssid":"CableBox-9655-2_4Ghz"
+	"password": "connectnow20"	
+}
+
+connectionConfig SConfig{
+	type: SERIAL
+	}
+
+iot device Cup {
+	setup Wifi
+	connect to Server on '0' using SConfig
+	list temps
+	var upperBound = 10
+	var lowerBound = 2
+	var index = 1
+	var mean 
+	
+	/*listen on 192.168.0.21:9000 -> {
+		if(index == 1){
+			mean -> to upperBound
+			2 -> to index
+		}else{
+			mean -> to lowerBound
+			1 -> to index
+		}
+	  }*/
+		
+	
+	
+	
+
+	every 10 MILLISECONDS{
+		read from TEMPERATURE -> add to temps
+		
+		
+	}
+	
+	every 100 MILLISECONDS {
+		mean of temps -> to mean
+		if(mean > lowerBound AND mean < upperBound){
+			LED OFF
+		}else{
+			LED ON
+		}
+		
+		read var mean -> send to Server
+	}
+	
+}
+
+
+controller device Server{
+	
+	connect to Cup on "/dev/ttyACM0" using SConfig
+	list items 
+	var index = 1
+	listen on 192.168.0.3:8123 -> add to items 
+	
+	
+	every 20 SECONDS{
+		if (index == 1){
+		// Coffee limits
+		
+		80 -> send to Cup
+		60 -> send to Cup
+		2 -> to index
+		} else{
+			// room temperature limits
+			40-> send to Cup
+			1-> send to Cup
+		}
+	}
+	
+}
