@@ -387,6 +387,7 @@ class IoTGenerator extends AbstractGenerator {
 			import time
 			import socket
 			import select
+			import sys
 			import _thread
 			
 			
