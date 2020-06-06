@@ -7,6 +7,7 @@ import com.google.inject.Inject
 import org.eclipse.xtext.testing.InjectWith
 import org.eclipse.xtext.testing.extensions.InjectionExtension
 import org.eclipse.xtext.testing.util.ParseHelper
+import org.junit.Assert
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
@@ -21,10 +22,16 @@ class IoTParsingTest {
 	@Test
 	def void loadModel() {
 		val result = parseHelper.parse('''
-			Hello Xtext!
+			iot test {
+				var x = 5
+			}
 		''')
-		Assertions.assertNotNull(result)
+		Assert.assertEquals(result.devices.get(0).name, 'test')
+		Assert.assertEquals(result.devices.get(0).program.variables.get(0).name, 'x')
+		
 		val errors = result.eResource.errors
 		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
 	}
+	
+
 }

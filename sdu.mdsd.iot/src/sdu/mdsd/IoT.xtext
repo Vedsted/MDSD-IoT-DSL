@@ -49,17 +49,23 @@ Declaration:
  * Device 
  */
 Device:
-	IoTDevice | ControllerDevice
+	AbstractDevice | IoTDevice | ControllerDevice
+;
+
+AbstractDevice:
+	'abstract' name=ID (':' extending+=[AbstractDevice] (',' extending+=[AbstractDevice])* )? '{'
+		program=Program	
+	'}'
 ;
 
 ControllerDevice:
-	'controller' 'device' name=ID '{'
+	'controller' name=ID (':' extending+=[AbstractDevice] (',' extending+=[AbstractDevice])* )? '{'
 		program=Program
 	'}'
 ;
 
 IoTDevice:
-	'iot' 'device' name=ID '{'
+	'iot' name=ID (':' extending+=[AbstractDevice] (',' extending+=[AbstractDevice])* )? '{'
 		program=Program
 	'}'
 ;

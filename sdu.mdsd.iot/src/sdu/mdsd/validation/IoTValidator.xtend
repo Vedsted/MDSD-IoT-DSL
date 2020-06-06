@@ -3,6 +3,11 @@
  */
 package sdu.mdsd.validation
 
+import sdu.mdsd.ioT.Device
+import org.eclipse.xtext.validation.Check
+import sdu.mdsd.ioT.IoTPackage
+import java.util.ArrayList
+import java.util.List
 
 /**
  * This class contains custom validation rules. 
@@ -22,4 +27,39 @@ class IoTValidator extends AbstractIoTValidator {
 //		}
 //	}
 	
+	public static val CYCLICDECLARATION = 'cyclicDeclaration'
+	
+	@Check
+	def checkCyclicInheritance(Device device) {
+		var ArrayList<Device> parents = newArrayList
+				
+		if (device.hasCyclicDeclaration(parents)) {
+			error(
+				"Cyclic declaration found in device: '" + device.name + "'", 
+				IoTPackage.Literals.DEVICE__EXTENDING, 
+				CYCLICDECLARATION
+			)
+		}
+	}
+		
+	private def boolean hasCyclicDeclaration(Device device, List<Device> l) {		
+		// device already found
+		if (l.contains(device)) 
+			return true
+		
+		// Check if name is seen before
+		if (l.filter[e | e.name == device.name].length > 0)
+			return true
+		
+		// Add device to seen and run for extending
+		for (e : device.extending) {
+			l.add(device)
+			if (e.hasCyclicDeclaration(l))
+				return true	
+		}
+		
+		l.add(device)
+		return false
+	}
+		
 }

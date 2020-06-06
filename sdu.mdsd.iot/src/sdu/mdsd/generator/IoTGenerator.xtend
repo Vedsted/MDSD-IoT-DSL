@@ -34,7 +34,7 @@ class IoTGenerator extends AbstractGenerator {
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		// var model = resource.allContents.filter(Model).toList
 		_resource = resource
-		for (dev : resource.allContents.filter(Device).toList) {
+		for (dev : resource.allContents.filter(Device).filter(e | !(e instanceof AbstractDevice)).toList) {
 
 			fsa.generateFile('''«dev.name»/main.py''', dev.convDevice)
 		}
