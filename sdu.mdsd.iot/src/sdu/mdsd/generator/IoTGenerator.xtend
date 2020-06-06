@@ -48,7 +48,7 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def buildImports(Device device) {
-		// TODO ideally only import things used in the program, but you know
+		// TODO ideally only import things used in the progra
 		var imports = device.deviceType.templates.filter[body.imports !== null].map[body.imports].toList
 		var strings = new ArrayList<String>();
 		for (import : imports) {
@@ -170,20 +170,22 @@ class IoTGenerator extends AbstractGenerator {
 				var connectionList = this.currentDevice.program.topLevelCommands.filter(ConnectStatement).filter([
 					device == command.target
 				]).toList
-				var connection = connectionList.length > 0
-						? connectionList.get(0)
-						: command.target.eAllContents.filter(ListenStatement).toList.get(0)
+				var connection = connectionList.length > 0 ? connectionList.get(0) : command.target.eAllContents.filter(
+						ListenStatement).toList.get(0)
 
 				switch (connection) {
 					ConnectStatement: {
 						params.put("baud", connection.configuration?.declarations?.extractDeclaration("baud")?.value)
-						params.put("stopbits", connection.configuration?.declarations?.extractDeclaration("stopbits")?.value)
-						params.put("parity",connection.configuration?.declarations?.extractDeclaration("parity")?.value)
-						params.put("bytesize",connection.configuration?.declarations?.extractDeclaration("bytesize")?.value)
-						params.put("bus",connection.address.value)
-						params.put("target",command.target.name)
-						
-						klass=SerialWriteTmpl
+						params.put("stopbits",
+							connection.configuration?.declarations?.extractDeclaration("stopbits")?.value)
+						params.put("parity",
+							connection.configuration?.declarations?.extractDeclaration("parity")?.value)
+						params.put("bytesize",
+							connection.configuration?.declarations?.extractDeclaration("bytesize")?.value)
+						params.put("bus", connection.address.value)
+						params.put("target", command.target.name)
+
+						klass = SerialWriteTmpl
 					}
 					ListenStatement: {
 						params.put("ip", command.target.program.topLevelCommands.filter(ListenStatement).get(0).ip)
@@ -220,23 +222,25 @@ class IoTGenerator extends AbstractGenerator {
 				params.put("name", command.value.name)
 				klass = ReadVariableTmpl
 			}
-			ReadConnection:{
+			ReadConnection: {
 				var connectionList = this.currentDevice.program.topLevelCommands.filter(ConnectStatement).filter([
 					device == command.source
 				]).toList
-				var connection = connectionList.length > 0
-						? connectionList.get(0)
-						: command.source.eAllContents.filter(ListenStatement).toList.get(0)
+				var connection = connectionList.length > 0 ? connectionList.get(0) : command.source.eAllContents.filter(
+						ListenStatement).toList.get(0)
 				switch (connection) {
 					ConnectStatement: {
 						params.put("baud", connection.configuration?.declarations?.extractDeclaration("baud")?.value)
-						params.put("stopbits", connection.configuration?.declarations?.extractDeclaration("stopbits")?.value)
-						params.put("parity",connection.configuration?.declarations?.extractDeclaration("parity")?.value)
-						params.put("bytesize",connection.configuration?.declarations?.extractDeclaration("bytesize")?.value)
-						
-						params.put("bus",connection.address.value)
-						params.put("target",command.source.name)
-						klass=SerialReadTmpl
+						params.put("stopbits",
+							connection.configuration?.declarations?.extractDeclaration("stopbits")?.value)
+						params.put("parity",
+							connection.configuration?.declarations?.extractDeclaration("parity")?.value)
+						params.put("bytesize",
+							connection.configuration?.declarations?.extractDeclaration("bytesize")?.value)
+
+						params.put("bus", connection.address.value)
+						params.put("target", command.source.name)
+						klass = SerialReadTmpl
 					}
 					ListenStatement: {
 						throw new Exception("Read from networked device replaced by listen statement")
@@ -316,7 +320,7 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def doSetup(Class<? extends Template> class1, Map<String, String> paramsMap) {
-		if(class1===null)
+		if (class1 === null)
 			return
 		var templates = currentDevice.deviceType.templates.filter(class1).toList
 		for (impl : templates) {
@@ -329,7 +333,7 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def getUseCodeFor(Class<? extends Template> class1, Map<String, String> paramsMap) {
-		if(class1===null)
+		if (class1 === null)
 			return ""
 		var sb = new StringBuilder();
 		var templates = currentDevice.deviceType.templates.filter(class1).toList
@@ -344,6 +348,40 @@ class IoTGenerator extends AbstractGenerator {
 		}
 		return sb.toString()
 
+	}
+
+	def extractDeclaration(List<Declaration> declarations, String _key) {
+		val d = declarations.filter[key == _key]
+		d.length > 0 ? d.get(0) : null
+	}
+
+	def String convertSleepTime(Loop loop) {
+		if (loop.timeVal === null) {
+			return "0"
+		}
+		val exp = loop.timeVal
+
+		switch (exp) {
+			VarAccess: {
+				return exp.variableName.name
+			}
+			IntExpression: {
+				return convertTime(loop.timeUnit, exp.value).toString
+			}
+			default:
+				throw new Exception("Invalid time value" + exp)
+		}
+	}
+
+	def convertTime(TIMEUNIT timeunit, int timevalue) {
+		switch timeunit {
+			MILLISECONDS: timevalue / 1000.0
+			SECONDS: timevalue
+			MINUTES: timevalue * 60
+			HOURS: timevalue * 3600
+			DAYS: timevalue * 24 * 3600
+			WEEKS: timevalue * 7 * 24 * 3600
+		}
 	}
 
 	def insertParameters(String setup, List<TmplParam> params, Map<String, String> paramsMap) {
@@ -389,37 +427,4 @@ class IoTGenerator extends AbstractGenerator {
 		return codeStringLines.join('\n')
 	}
 
-	def extractDeclaration(List<Declaration> declarations, String _key) {
-		val d = declarations.filter[key == _key]
-		d.length > 0 ? d.get(0) : null
-	}
-
-	def String convertSleepTime(Loop loop) {
-		if (loop.timeVal === null) {
-			return "0"
-		}
-		val exp = loop.timeVal
-
-		switch (exp) {
-			VarAccess: {
-				return exp.variableName.name
-			}
-			IntExpression: {
-				return convertTime(loop.timeUnit, exp.value).toString
-			}
-			default:
-				throw new Exception("Invalid time value" + exp)
-		}
-	}
-
-	def convertTime(TIMEUNIT timeunit, int timevalue) {
-		switch timeunit {
-			MILLISECONDS: timevalue / 1000.0
-			SECONDS: timevalue
-			MINUTES: timevalue * 60
-			HOURS: timevalue * 3600
-			DAYS: timevalue * 24 * 3600
-			WEEKS: timevalue * 7 * 24 * 3600
-		}
-	}
 }
