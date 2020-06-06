@@ -51,7 +51,7 @@ class IoTGenerator extends AbstractGenerator {
 		return names
 	}
 
-	def dispatch convDevice(IoTDevice device) {
+	def compile(EdgeDevice device) {
 		currentDevice = device;
 		var loopTexts = new ArrayList<CharSequence>();
 		for (var i = 0; i < device.program.loops.length; i++) {
@@ -308,11 +308,15 @@ class IoTGenerator extends AbstractGenerator {
 		}
 	}
 
-	def dispatch serialWrite(IoTDevice device, Device _) {
+	def dispatch serialWrite(EdgeDevice device, Device _) {
 		return '''print(value)''' // print sends a value over serial USB connection on PyCom devices.
 	}
 
-	def dispatch serialWrite(ControllerDevice device, Device targetDevice) {
+	def dispatch serialWrite(FogDevice device, Device targetDevice) {
+		return '''serial«targetDevice.name».write(bytes(str(value) + "\n", "utf8"))'''
+	}
+	
+	def dispatch serialWrite(CloudDevice device, Device targetDevice) {
 		return '''serial«targetDevice.name».write(bytes(str(value) + "\n", "utf8"))'''
 	}
 
@@ -335,7 +339,7 @@ class IoTGenerator extends AbstractGenerator {
 		var connection = connectionList.length > 0 ? connectionList.get(0) : throw new Exception(
 				"A connection to the device not found")
 		switch (currentDevice) {
-			IoTDevice: {
+			EdgeDevice: {
 				if (connection.configuration.type == "WLAN") {
 					return '''return socket.recv(1024)'''
 				} else if (connection.configuration.type == "SERIAL") {
@@ -344,7 +348,7 @@ class IoTGenerator extends AbstractGenerator {
 					throw new Exception("Connect config not found")
 				}
 			}
-			ControllerDevice: {
+			FogDevice | CloudDevice: {
 				if (connection.configuration.type == "WLAN") {
 					return '''return socket.recv(1024)'''
 				} else if (connection.configuration.type == "SERIAL") {
@@ -369,8 +373,20 @@ class IoTGenerator extends AbstractGenerator {
 			'''
 		}
 	}
+	
+	def convDevice(Device device) {
+		switch (device) {
+			EdgeDevice: {
+				return device.compile
+			}
+			FogDevice | CloudDevice: {
+				return device.compile				
+			}
+		}
+		
+	}
 
-	def dispatch convDevice(ControllerDevice device) {
+	def compile(Device device) {
 		currentDevice = device;
 		var loopTexts = new ArrayList<CharSequence>();
 		for (var i = 0; i < device.program.loops.length; i++) {

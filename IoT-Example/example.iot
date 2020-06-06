@@ -10,7 +10,7 @@ connectionConfig EdgeWifi {
 	"password": "connectnow20"
 }
 
-iot device LightSensor {
+edge device LightSensor {
 	setup EdgeWifi
 	
 	list lightLevels
@@ -47,7 +47,7 @@ iot device LightSensor {
 	}
 }
 
-controller device FogController {
+fog device FogController {
 	
 	list lightLevels
 	var listLength
@@ -77,7 +77,7 @@ controller device FogController {
 }
 
 
-controller device CloudService {
+cloud device CloudService {
 	
 	/*
 	 * Setup server for communicating with fog-nodes

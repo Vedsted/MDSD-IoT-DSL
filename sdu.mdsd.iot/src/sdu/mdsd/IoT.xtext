@@ -46,20 +46,26 @@ Declaration:
 ;
 
 /*
- * Device 
+ * Device
  */
 Device:
-	IoTDevice | ControllerDevice
+	EdgeDevice | FogDevice | CloudDevice
 ;
 
-ControllerDevice:
-	'controller' 'device' name=ID '{'
+CloudDevice:
+	'cloud' 'device' name=ID '{'
 		program=Program
 	'}'
 ;
 
-IoTDevice:
-	'iot' 'device' name=ID '{'
+FogDevice:
+	'fog' 'device' name=ID '{'
+		program=Program
+	'}'
+;
+
+EdgeDevice:
+	'edge' 'device' name=ID '{'
 		program=Program
 	'}'
 ;

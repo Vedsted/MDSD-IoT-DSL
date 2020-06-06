@@ -26,8 +26,9 @@
     <eStructuralFeatures xsi:type="ecore:EReference" name="program" eType="#//Program"
         containment="true"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="ControllerDevice" eSuperTypes="#//Device"/>
-  <eClassifiers xsi:type="ecore:EClass" name="IoTDevice" eSuperTypes="#//Device"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CloudDevice" eSuperTypes="#//Device"/>
+  <eClassifiers xsi:type="ecore:EClass" name="FogDevice" eSuperTypes="#//Device"/>
+  <eClassifiers xsi:type="ecore:EClass" name="EdgeDevice" eSuperTypes="#//Device"/>
   <eClassifiers xsi:type="ecore:EClass" name="Program">
     <eStructuralFeatures xsi:type="ecore:EReference" name="wifiStatements" eType="#//WifiStatement"
         containment="true"/>
