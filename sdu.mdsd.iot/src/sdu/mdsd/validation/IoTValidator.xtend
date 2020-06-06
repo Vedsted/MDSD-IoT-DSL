@@ -47,10 +47,6 @@ class IoTValidator extends AbstractIoTValidator {
 		if (l.contains(device)) 
 			return true
 		
-		// Check if name is seen before
-		if (l.filter[e | e.name == device.name].length > 0)
-			return true
-		
 		// Add device to seen and run for extending
 		for (e : device.extending) {
 			l.add(device)
