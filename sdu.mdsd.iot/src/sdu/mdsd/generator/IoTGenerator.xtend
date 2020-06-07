@@ -20,6 +20,10 @@ import sdu.mdsd.ioT.Device
 import sdu.mdsd.services.IoTGrammarAccess.SendCommandElements
 import java.util.Map
 import sdu.mdsd.ioT.Loop
+import sdu.mdsd.utils.IoTUtils
+import com.google.inject.Inject
+import sdu.mdsd.ioT.impl.DeviceConfigImpl
+import sdu.mdsd.ioT.impl.DeviceImpl
 
 /**
  * Generates code from your model files on save.
@@ -30,12 +34,29 @@ class IoTGenerator extends AbstractGenerator {
 
 	Device currentDevice;
 	Resource _resource
+	
+	@Inject extension IoTUtils
 
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		// var model = resource.allContents.filter(Model).toList
 		_resource = resource
+		
+		// 1. Get all devices which are not abstract
+		// 2. For each non-abstract device, form the device hierarchy
+		// 3. Loop the device hierarchy backwards i.e. start with the most abstract class
+		// 4. Make a new device object where properties are overridden depending on the object-graph
+		//    e.g. variable names of the same name gets overridden
+		//	  setup constructs etc. gets overridden as the object-graph is traversed
+		
+		val nonAbstractDevices = resource.allContents.filter(Device).nonAbstractDevices
+		
+		for (nonAbstractDev : nonAbstractDevices.toList) {
+			val h = nonAbstractDev.deviceHierarchy.toList.reverse
+			println(h)
+		}
+		
+		
 		for (dev : resource.allContents.filter(Device).toList) {
-
 			fsa.generateFile('''«dev.name»/main.py''', dev.convDevice)
 		}
 	}

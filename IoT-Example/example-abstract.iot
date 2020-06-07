@@ -1,0 +1,94 @@
+external ext_length // Calculates the length of a list
+external ext_pop	// Pop the first element of a list
+external ext_isEmpty // Returns a bool indicating an empty list if true
+external ext_print 	// Prints a message
+external ext_avg	// Calculates the average of a list of values
+
+connectionConfig EdgeWifi {
+	type:WLAN
+	"ssid":"CableBox-9655-2_4Ghz"
+	"password": "connectnow20"
+}
+
+abstract edge device AbstractBase {
+	setup EdgeWifi
+}
+
+abstract edge device AbstractLightSensor extends AbstractBase {
+	list lightLevels
+	var lightLevel
+	var lower = 90
+	var upper = 300
+	var NIL
+	
+	/*
+	 * Read light level loop
+	 */
+	every 1 SECONDS {
+		read from LIGHTSENSOR -> to lightLevel
+		ext_print of lightLevel -> to NIL
+		
+		// Record values that are exceeding boundaries
+		if lightLevel > lower && lightLevel < upper{
+			read var lightLevel -> add to lightLevels
+		}
+	}
+}
+
+abstract edge device AbstractLEDActuator extends AbstractBase {
+	var turnOnLED = false
+	
+	every 500 MILLISECONDS {
+		if (turnOnLED) {
+			LED ON
+		} else {
+			LED OFF
+		}
+	}
+}
+
+edge device Harvester extends AbstractLightSensor, AbstractLEDActuator {
+	
+	var isEmpty
+	
+	// Allows communication to this device
+	listen on 192.168.0.21:9123 -> to turnOnLED
+	
+	/*
+	 * Send to fog controller loop
+	 */
+	always {
+		ext_isEmpty of lightLevels -> to isEmpty
+		if isEmpty == false {
+			LED ON // Indicate network activity
+			ext_pop of lightLevels -> send to Controller
+			LED OFF
+		}
+	}
+}
+
+
+fog device Controller {
+	var lightLevel
+	var threshold = 100
+	var turnOff = false
+	var turnOn = true
+	var NIL
+	
+	/*
+	 * Thread that gets input from the light sensor
+	 */
+	listen on 192.168.0.3:8123 -> to lightLevel
+	
+	/*
+	 * Thread that interacts with the actuator
+	 */
+	always {
+		if lightLevel > threshold {
+			ext_print of lightLevel -> to NIL
+			read var turnOff -> send to Harvester
+		} else {
+			read var turnOn -> send to Harvester
+		}
+	}
+}

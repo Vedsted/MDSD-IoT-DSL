@@ -52,20 +52,20 @@ Device:
 	EdgeDevice | FogDevice | CloudDevice
 ;
 
-CloudDevice:
-	'cloud' 'device' name=ID '{'
+EdgeDevice returns Device:
+	{EdgeDevice} isAbstract?=('abstract')? 'edge' 'device' name=ID ('extends' superTypes+=[Device] (',' superTypes+=[Device])* )? '{'
 		program=Program
 	'}'
 ;
 
-FogDevice:
-	'fog' 'device' name=ID '{'
+FogDevice returns Device:
+	{FogDevice} isAbstract?=('abstract')? 'fog' 'device' name=ID ('extends' superTypes+=[Device] (',' superTypes+=[Device])* )? '{'
 		program=Program
 	'}'
 ;
 
-EdgeDevice:
-	'edge' 'device' name=ID '{'
+CloudDevice returns Device:
+	{CloudDevice} isAbstract?=('abstract')? 'cloud' 'device' name=ID ('extends' superTypes+=[Device] (',' superTypes+=[Device])* )? '{'
 		program=Program
 	'}'
 ;

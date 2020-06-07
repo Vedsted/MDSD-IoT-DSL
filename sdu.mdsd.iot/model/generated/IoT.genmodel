@@ -23,12 +23,11 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Declaration/value"/>
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//Device">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Device/isAbstract"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//Device/name"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference IoT.ecore#//Device/superTypes"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Device/program"/>
     </genClasses>
-    <genClasses ecoreClass="IoT.ecore#//CloudDevice"/>
-    <genClasses ecoreClass="IoT.ecore#//FogDevice"/>
-    <genClasses ecoreClass="IoT.ecore#//EdgeDevice"/>
     <genClasses ecoreClass="IoT.ecore#//Program">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Program/wifiStatements"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Program/connectStatements"/>
@@ -104,6 +103,9 @@
     <genClasses ecoreClass="IoT.ecore#//ConnectionConfig">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//ConnectionConfig/type"/>
     </genClasses>
+    <genClasses ecoreClass="IoT.ecore#//EdgeDevice"/>
+    <genClasses ecoreClass="IoT.ecore#//FogDevice"/>
+    <genClasses ecoreClass="IoT.ecore#//CloudDevice"/>
     <genClasses ecoreClass="IoT.ecore#//IpAddress"/>
     <genClasses ecoreClass="IoT.ecore#//WindowsSerialAddress"/>
     <genClasses ecoreClass="IoT.ecore#//UnixSerialAddress"/>
