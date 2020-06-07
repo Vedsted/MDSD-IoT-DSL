@@ -23,11 +23,7 @@ import sdu.mdsd.ioT.*
  */
 class IoTGenerator extends AbstractGenerator {
 
-	Device currentDevice;
-
-
 	List<String> usedSetups;
-	List<String> usedImports;
 
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		// var model = resource.allContents.filter(Model).toList
@@ -37,7 +33,6 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def convertDevice(Device device) {
-		currentDevice = device
 		usedSetups = new ArrayList<String>()
 		var importString = buildImports(device)
 		var programString = buildProgram(device)
@@ -50,7 +45,7 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def buildImports(Device device) {
-		// TODO ideally only import things used in the program, but you know
+		// TODO ideally only import things used in the program
 		var imports = device.deviceType.templates.filter[body.imports !== null].map[body.imports].toList
 		var strings = new ArrayList<String>();
 		for (import : imports) {
@@ -81,8 +76,7 @@ class IoTGenerator extends AbstractGenerator {
 		return sb.toString()
 	}
 
-	var loopCount = 0;
-
+	// BEGIN section that is unique to the flexible solution
 	def String generateCode(Expression command) {
 		switch(command){
 			Number: return command.value.toString()
@@ -103,7 +97,7 @@ class IoTGenerator extends AbstractGenerator {
 			}
 		}
 	}
-
+	// END section that is unique to the flexible solution
 
 	def insertParameters(String setup, Map<String, String> paramsMap) {
 
