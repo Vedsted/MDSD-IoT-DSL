@@ -3,7 +3,7 @@ devicetype controller "controller.py" :
 
 {{SETUP}}
 
-{{PROGRAM}}"
+{{PROGRAM}}" 
 	arrow (left=LEFT, right=RIGHT):
 		use:
 "def expLeft{{UUID}}():
@@ -27,7 +27,7 @@ def loop{{UUID}}():
 
 _thread.start_new_thread(th_func{{UUID}}, (loop{{UUID}},))" 
 
-serialread (baud=B, parity=P, bytesize=BS, bus=A, stopbits=SB,target=TGT):
+serialread (baud=B, parity=P, bytesize=BS, bus=A, stopbits=SB,source=TGT):
 import:
 "import serial"
 setup:
@@ -50,7 +50,7 @@ import select {{IPe}}"
 		setup: 
 "server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print('Socket created')				
-
+ 
 # Bind socket to local host and port
 try:
     server.bind(({{IPe}}, {{PORT}}))

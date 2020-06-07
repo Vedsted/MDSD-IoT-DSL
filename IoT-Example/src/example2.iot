@@ -3,7 +3,7 @@ iot device AAA {
 	every 5 SECONDS { 
 		if ( varr > 3 && 2 != 3) {  
 			LED ON 
-		} else { 
+		} else {   
 		LED OFF 
 		}
 	}

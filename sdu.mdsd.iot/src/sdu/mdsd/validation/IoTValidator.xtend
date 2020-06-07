@@ -272,6 +272,62 @@ class IoTValidator extends AbstractIoTValidator {
 			ExternalTmpl:
 				if (par.meaning != "method" && par.meaning != "target")
 					error('''Parameter «par.meaning» is not valid''', atts)
+			ToVarTmpl:
+				if(par.meaning != "name") error('''Parameter «par.meaning» is not valid''', atts)
+			LEDTmpl:
+				if(par.meaning != "hex") error('''Parameter «par.meaning» is not valid''', atts)
+			IfStatementTmpl:
+				if(par.meaning != "condition" && par.meaning != "cmds" &&
+					par.meaning != "elsecmds") error('''Parameter «par.meaning» is not valid''', atts)
+			SerialReadTmpl:
+				if(par.meaning != "baud" && par.meaning != "bytesize" && par.meaning != "stopbits" &&
+					par.meaning != "parity" && par.meaning != "bus" &&
+					par.meaning != "source") error('''Parameter «par.meaning» is not valid''', atts)
+			SerialWriteTmpl:
+				if(par.meaning != "baud" && par.meaning != "bytesize" && par.meaning != "stopbits" &&
+					par.meaning != "parity" && par.meaning != "bus" &&
+					par.meaning != "target") error('''Parameter «par.meaning» is not valid''', atts)
+			ReadVariableTmpl:
+				if(par.meaning != "name") error('''Parameter «par.meaning» is not valid''', atts)
+			TrueTmpl:
+				error('''Parameter «par.meaning» is not valid''', atts)
+			FalseTmpl:
+				error('''Parameter «par.meaning» is not valid''', atts)
+			IntTmpl:
+				if(par.meaning != "val") error('''Parameter «par.meaning» is not valid''', atts)
+			VariableTmpl:
+				if(par.meaning != "name") error('''Parameter «par.meaning» is not valid''', atts)
+			VariableWithInstantiationTmpl:
+				if (par.meaning != "name" && par.meaning != "val")
+					error('''Parameter «par.meaning» is not valid''', atts)
+			OrTmpl:
+				if (par.meaning != "left" && par.meaning != "right")
+					error('''Parameter «par.meaning» is not valid''', atts)
+			AndTmpl:
+				if (par.meaning != "left" && par.meaning != "right")
+					error('''Parameter «par.meaning» is not valid''', atts)
+			EqlTmpl:
+				if(par.meaning != "left" && par.meaning != "right" &&
+					par.meaning != "op") error('''Parameter «par.meaning» is not valid''', atts)
+			GreaterThanTmpl:
+				error('''Parameter «par.meaning» is not valid''', atts)
+			LessThanTmpl:
+				error('''Parameter «par.meaning» is not valid''', atts)
+			LessThanEqualTmpl:
+				error('''Parameter «par.meaning» is not valid''', atts)
+			GreatThanEqualTmpl:
+				error('''Parameter «par.meaning» is not valid''', atts)
+			EqualOpTmpl:
+				error('''Parameter «par.meaning» is not valid''', atts)
+			NotEqualTmpl:
+				error('''Parameter «par.meaning» is not valid''', atts)
+			ItemVariableTmpl:
+				if(par.meaning != "varname") error('''Parameter «par.meaning» is not valid''', atts)
+			ItemIntTmpl:
+				if (par.meaning != "val")
+					error('''Parameter «par.meaning» is not valid''', atts)
+			ItemBoolTmpl:
+				if(par.meaning != "val") error('''Parameter «par.meaning» is not valid''', atts)
 		}
 	}
 

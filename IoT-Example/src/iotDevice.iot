@@ -82,8 +82,8 @@ lightsensor = LTR329ALS01(integration=integration_time, rate=measurement_rate, g
 lux = (luxTuple[0]+luxTuple[1])/2
 return lux"
  
- serialwrite (baud=B, parity=P, bytesize=BS, bus=A, stopbits=SB,target=TGT):
-use:
+ serialwrite (baud=B, parity=P, bytesize=BS, bus=A, stopbits=SB,target=TGT): 
+use: 
 "print(value)"
 	socketconnection (ip=IP, port=PORT, target=TARGET_DEVICE):
 		import:
@@ -114,9 +114,8 @@ trueLiteral :
 
 eql (left=A, op=OP, right=B):
 	use:
-	"{{A}} {{OP}} {{B}}"
-
-andop (val1=A, val2=B):
+	"{{A}} {{OP}} {{B}}"  
+andop (left=A, right=B):
 	use: "{{A}} and {{B}}"
 ibool (val=VALUE): 
 	use:
@@ -127,7 +126,7 @@ ivar (varname=VAR):
 iint (val=VALUE): 
 	use:
 	"{{VALUE}}"
-	
+	 
 gtop:
 	use: ">"
 	
@@ -137,7 +136,7 @@ neqlop :
 vardecl (name=NAME):
 	use:
 	 "{{NAME}} = None"
-	 
+	   
 variableInstantiation (name=NAME, val=VALUE):
 	use: "{{NAME}} = {{VALUE}}"
 

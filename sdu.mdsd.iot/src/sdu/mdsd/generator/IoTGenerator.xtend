@@ -15,8 +15,7 @@ import org.eclipse.xtext.generator.AbstractGenerator
 import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
 import sdu.mdsd.ioT.*
-import sdu.mdsd.ioT.Comparison
-import sdu.mdsd.ioT.ComparisonOp
+
 
 /**
  * Generates code from your model files on save.
@@ -48,7 +47,7 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def buildImports(Device device) {
-		// TODO ideally only import things used in the progra
+		// TODO ideally only import things used in the program
 		var imports = device.deviceType.templates.filter[body.imports !== null].map[body.imports].toList
 		var strings = new ArrayList<String>();
 		for (import : imports) {
@@ -79,6 +78,7 @@ class IoTGenerator extends AbstractGenerator {
 		return sb.toString()
 	}
 
+	// BEGIN section that is unique to the hard coded solution
 	def String generateCode(TopLevelCommand command) {
 		var params = new HashMap<String, String>()
 		var Class<? extends Template> klass;
@@ -104,7 +104,7 @@ class IoTGenerator extends AbstractGenerator {
 					Variable: {
 						params.put("name", command.name)
 						if (command.value !== null) {
-							params.put("value", command.value.buildCommand)
+							params.put("val", command.value.buildCommand)
 							klass = VariableWithInstantiationTmpl
 						} else {
 							klass = VariableTmpl
@@ -145,8 +145,6 @@ class IoTGenerator extends AbstractGenerator {
 			ArrowCommand: {
 				params.put("left", command.left.buildCommand)
 				params.put("right", command.right.buildCommand)
-				val uuid = UUID.randomUUID.toString.replace('-', '_'); // dashes are illegal in method names in python
-				params.put("UUID", uuid)
 				klass = ArrowTmpl
 			}
 			ClearListAction: {
@@ -239,7 +237,7 @@ class IoTGenerator extends AbstractGenerator {
 							connection.configuration?.declarations?.extractDeclaration("bytesize")?.value)
 
 						params.put("bus", connection.address.value)
-						params.put("target", command.source.name)
+						params.put("source", command.source.name)
 						klass = SerialReadTmpl
 					}
 					ListenStatement: {
@@ -275,13 +273,13 @@ class IoTGenerator extends AbstractGenerator {
 		var Class<? extends Template> klass;
 		switch (comparison) {
 			OR: {
-				params.put("val1", comparison.left.buildCondition)
-				params.put("val2", comparison.right.buildCondition)
+				params.put("left", comparison.left.buildCondition)
+				params.put("right", comparison.right.buildCondition)
 				klass = OrTmpl
 			}
 			AND: {
-				params.put("val1", comparison.left.buildCondition)
-				params.put("val2", comparison.right.buildCondition)
+				params.put("left", comparison.left.buildCondition)
+				params.put("right", comparison.right.buildCondition)
 				klass = AndTmpl
 			}
 			EQL: {
@@ -383,6 +381,8 @@ class IoTGenerator extends AbstractGenerator {
 			WEEKS: timevalue * 7 * 24 * 3600
 		}
 	}
+	
+	// END section that is unique to the hard coded solution
 
 	def insertParameters(String setup, List<TmplParam> params, Map<String, String> paramsMap) {
 		var codeString = setup

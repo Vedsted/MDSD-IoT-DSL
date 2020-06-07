@@ -3,7 +3,7 @@ external log
 connectionConfig Wifi{
 	type:WLAN
 	"ssid":"Network2GHz"
-	"password": "kalenderlys"
+	"password": "kalenderlys" 
 } 
 connectionConfig Serial{
 	type: SERIAL
