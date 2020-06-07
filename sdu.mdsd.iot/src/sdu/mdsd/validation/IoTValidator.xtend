@@ -3,23 +3,74 @@
  */
 package sdu.mdsd.validation
 
+import sdu.mdsd.ioT.*;
+import org.eclipse.xtext.validation.Check
+import java.util.regex.Pattern
+import org.eclipse.emf.ecore.EStructuralFeature
 
 /**
  * This class contains custom validation rules. 
- *
+ * 
  * See https://www.eclipse.org/Xtext/documentation/303_runtime_concepts.html#validation
  */
 class IoTValidator extends AbstractIoTValidator {
+
+	@Check
+	def checkDDLBody(DeviceDefinition ddl) {
+
+		if (!ddl.body.contains("{{IMPORTS}}") || !ddl.body.contains("{{SETUP}}") || !ddl.body.contains("{{PROGRAM}}")) {
+			error('''DDL body must contain {{IMPORTS}}, {{SETUP}} and {{PROGRAM}}''',
+				IoTPackage.eINSTANCE.deviceDefinition_Body)
+		}
+
+		val pattern = "\\{\\{[\\w\\s]*\\}\\}";
+		var regex = Pattern.compile(pattern);
+		var match = regex.matcher(ddl.body);
+		while (match.find()) {
+			val parameter = ddl.body.substring(match.start() + 2, match.end() - 2)
+			if (parameter != "IMPORTS" && parameter != "SETUP" && parameter != "PROGRAM") {
+				error('''Parameter «parameter» not valid''', IoTPackage.eINSTANCE.deviceDefinition_Body)
+			}
+		}
+	}
+
+	@Check
+	def checkTemplateCodeStringParamNamesExist(TmplBody template) {
+		checkCode(template.imports, template, IoTPackage.eINSTANCE.tmplBody_Imports)
+		checkCode(template.setup, template, IoTPackage.eINSTANCE.tmplBody_Setup)
+		checkCode(template.use, template, IoTPackage.eINSTANCE.tmplBody_Use)
+	}
 	
-//	public static val INVALID_NAME = 'invalidName'
-//
-//	@Check
-//	def checkGreetingStartsWithCapital(Greeting greeting) {
-//		if (!Character.isUpperCase(greeting.name.charAt(0))) {
-//			warning('Name should start with a capital', 
-//					IoTPackage.Literals.GREETING__NAME,
-//					INVALID_NAME)
-//		}
-//	}
-	
+	@Check
+	def checkIsArray(Argument arg){
+		var param = arg.param
+		if(param.isArray){
+			if(arg.values.isEmpty && arg.value !== null){
+				error('''This parameter requires an array''', IoTPackage.eINSTANCE.argument_Value)
+			}
+		}else{
+			if(arg.value === null && !arg.values.isEmpty){
+				error('''This parameter does not accept an array''', IoTPackage.eINSTANCE.argument_Values)
+			}
+		}
+	}
+
+	def checkCode(String code, TmplBody template, EStructuralFeature atts) {
+		if (code === null)
+			return;
+		var parentObject = template.eContainer
+		var params = (parentObject as Template)?.params
+		if (params !== null) {
+			val pattern = "\\{\\{\\w*\\}\\}";
+			var regex = Pattern.compile(pattern);
+			var match = regex.matcher(code);
+			while (match.find()) {
+				val parameter = code.substring(match.start() + 2, match.end() - 2)
+				if (params.filter[item|item.name.equals(parameter)].isEmpty && parameter != "UUID") {
+					error('''Parameter «parameter» not declared''', atts)
+				}
+			}
+		}
+	}
+
 }

@@ -9,11 +9,11 @@ DeviceDefinition:
 	body=STRING
 	templates+=Template*;
 Template:
-	name=ID '(' params+=Parameter 
-		( ',' params+=Parameter)* ')' ':'
-	body=TemplBody;
+	name=ID ('(' params+=Parameter 
+		( ',' params+=Parameter)* ')')? ':'
+	body=TmplBody;
 Parameter:	name=ID (isArray?='[]')?;
-TemplBody: {TemplBody} 
+TmplBody: {TmplBody} 
 	('import:' imports=STRING)?
 	('setup:'setup=STRING)?
 	('use:' use=STRING)?;
@@ -28,7 +28,7 @@ Number:	value=INT;
 Argument:param=[Parameter] '=' (value=Expression 
 	| '[' values+=Expression (',' values+=Expression)*
 	  ']');
-Command:template=[Template] '('args+=Argument (',' args+=Argument )* ')';
+Command:template=[Template] '('args+=Argument? (',' args+=Argument )* ')';
 
 
 

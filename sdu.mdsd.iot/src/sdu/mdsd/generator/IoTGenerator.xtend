@@ -121,6 +121,8 @@ class IoTGenerator extends AbstractGenerator {
 			}
 			codeString = codeString.cleverReplace('''{{«param»}}''', newValue)
 		}
+		codeString = codeString.cleverReplace('''{{UUID}}''', UUID.randomUUID.toString.replace('-', '_'))
+		
 		return codeString;
 	}
 

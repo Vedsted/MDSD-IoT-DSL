@@ -1,0 +1,13 @@
+iot device AAA {
+	vardecl(NAME="varr")
+	loop(TSECONDS=5, COMMANDS= [ 
+ 		if(CONDITION= 
+			andop(LEFT=trueLiteral(), RIGHT=andop(LEFT=greaterThan(LEFT=readVar(VAR="varr"), RIGHT=3),
+				RIGHT=notEqual(LEFT=2, RIGHT=3))),
+			COMMANDS=led(COLOR="0xFFFFFF"),
+			ELSE=led(COLOR="0x000000") 
+		)
+		]
+		
+	)
+}

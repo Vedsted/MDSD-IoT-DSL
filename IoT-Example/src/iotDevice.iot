@@ -2,17 +2,17 @@ devicetype iot  "main.py":
 "{{IMPORTS}}
 {{SETUP}}
 {{PROGRAM}}"
-	loop (TSECONDS, NAME, COMMANDS[]):
+	loop (TSECONDS, COMMANDS[]):
 		use:
-"def th_func{{NAME}}(action):
+"def th_func{{UUID}}(action):
 	while True:
 		time.sleep({{TSECONDS}})
 		action()
 
-def loop{{NAME}}():
+def loop{{UUID}}():
 	{{COMMANDS}}
 
-_thread.start_new_thread(th_func{{NAME}}, (loop{{NAME}},))"
+_thread.start_new_thread(th_func{{UUID}}, (loop{{UUID}},))"
 	listdeclare (NAME):
 		setup:
 "{{NAME}} = []"
@@ -74,6 +74,50 @@ return temperature"
 		setup:
 "socket{{TARGET_DEVICE}} = socket.socket()
 socket{{TARGET_DEVICE}}.setblocking(True)
-socket{{TARGET_DEVICE}}.connect(('{{IP}}’, {{PORT}}))"
+socket{{TARGET_DEVICE}}.connect(('{{IP}}ï¿½, {{PORT}}))"
 		use:
 'socket{{TARGET_DEVICE}}.send(bytes(str(value), "utf8"))'
+
+if (CONDITION, COMMANDS, ELSE):
+use:
+"if({{CONDITION}}):
+	{{COMMANDS}}
+else:
+	{{ELSE}}"
+	
+led (COLOR):
+import: "import pycom"
+setup: "pycom.heartbeat(False)"
+use: "pycom.rgbled({{COLOR}})"
+
+trueLiteral :
+	use:
+		"True"
+
+greaterThan (LEFT, RIGHT):
+	use:
+	"{{LEFT}} > {{RIGHT}}"
+
+notEqual (LEFT, RIGHT):
+	use:
+	"{{LEFT}} != {{RIGHT}}"
+
+andop (LEFT, RIGHT):
+	use: "{{LEFT}} and {{RIGHT}}"
+ibool (VALUE): 
+	use:
+	"{{VALUE}}"
+	
+readVar (VAR):
+	use:"{{VAR}}"
+iint (VALUE): 
+	use:
+	"{{VALUE}}"
+	
+
+vardecl (NAME):
+	use:
+	 "{{NAME}} = None"
+	 
+
+

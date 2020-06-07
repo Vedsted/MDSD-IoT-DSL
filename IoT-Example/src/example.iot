@@ -2,15 +2,17 @@ iot device Cup {
 	wlan (SSID="network2", PASSWORD="kalenderlys")
 	listdeclare(NAME="temps")
 
-	loop(TSECONDS=1,NAME=1,COMMANDS=
+	loop(TSECONDS=1,COMMANDS=[
 		arrow(
 			LEFT=sensor(NAME="TEMPERATURE"),
 			RIGHT=listaddto(NAME="temps"),
 			UUID="anID0"
 		)
-	) 
+		 
+		]
+	)  
 
-	loop(TSECONDS=1,NAME=1,COMMANDS=[
+	loop(TSECONDS=1,COMMANDS=[
 		arrow(
 			LEFT=externalf(NAME="mean",TARGETNAME="temps"),
 			RIGHT=socketconnection(
