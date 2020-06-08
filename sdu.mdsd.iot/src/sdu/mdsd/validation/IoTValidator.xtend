@@ -8,6 +8,12 @@ import org.eclipse.xtext.validation.Check
 import sdu.mdsd.ioT.IoTPackage
 import java.util.ArrayList
 import java.util.List
+import sdu.mdsd.ioT.ControllerDevice
+import sdu.mdsd.ioT.ReadSensor
+import sdu.mdsd.ioT.SENSOR
+import sdu.mdsd.ioT.AbstractDevice
+import sdu.mdsd.ioT.Variable
+import static extension sdu.mdsd.utils.FindUtil.findRecursive
 
 /**
  * This class contains custom validation rules. 
@@ -15,20 +21,9 @@ import java.util.List
  * See https://www.eclipse.org/Xtext/documentation/303_runtime_concepts.html#validation
  */
 class IoTValidator extends AbstractIoTValidator {
+	static val ISSUE_CODE_PREFIX = 'sdu.mdsd.validation.'
 	
-//	public static val INVALID_NAME = 'invalidName'
-//
-//	@Check
-//	def checkGreetingStartsWithCapital(Greeting greeting) {
-//		if (!Character.isUpperCase(greeting.name.charAt(0))) {
-//			warning('Name should start with a capital', 
-//					IoTPackage.Literals.GREETING__NAME,
-//					INVALID_NAME)
-//		}
-//	}
-	
-	public static val CYCLICDECLARATION = 'cyclicDeclaration'
-	
+	public static val CYCLIC_DECLARATION = ISSUE_CODE_PREFIX + 'CyclicDeclaration'
 	@Check
 	def checkCyclicInheritance(Device device) {
 		var ArrayList<Device> parents = newArrayList
@@ -37,7 +32,7 @@ class IoTValidator extends AbstractIoTValidator {
 			error(
 				"Cyclic declaration found in device: '" + device.name + "'", 
 				IoTPackage.Literals.DEVICE__EXTENDING, 
-				CYCLICDECLARATION
+				CYCLIC_DECLARATION
 			)
 		}
 	}
@@ -47,7 +42,7 @@ class IoTValidator extends AbstractIoTValidator {
 		if (l.contains(device)) 
 			return true
 		
-		// Add device to seen and run for extending
+		// Add device to visited and check for extending
 		for (e : device.extending) {
 			l.add(device)
 			if (e.hasCyclicDeclaration(l))
@@ -57,5 +52,55 @@ class IoTValidator extends AbstractIoTValidator {
 		l.add(device)
 		return false
 	}
-		
+	
+	public static val SENSOR_IN_CONTROLLER = ISSUE_CODE_PREFIX + 'SensorInController'
+	@Check
+	def checkForSensors(ControllerDevice c){
+		if (!c.eAllContents.filter(SENSOR).toList.isEmpty){
+			error(
+				"Sensor used in Controller device: '" + c.name + "'", 
+				IoTPackage.Literals.DEVICE__PROGRAM, 
+				SENSOR_IN_CONTROLLER
+			)
+		} 
+	}
+	
+	public static val SENSOR_INHERITED_IN_CONTROLLER = ISSUE_CODE_PREFIX + 'SensorInheritedInController'
+	@Check
+	def checkForInheritedSensors(ControllerDevice c){		
+		c.extending.forEach[ a |
+			var s = a.findRecursive(SENSOR) 
+			if ( s.length > 0){
+				error(
+					"Sensor inherited in Controller device: '" + c.name + "' from Abstract device: '" + a.name + "'", 
+					IoTPackage.Literals.DEVICE__EXTENDING, 
+					SENSOR_INHERITED_IN_CONTROLLER
+				)
+			} 
+		]
+	}
+	
+	
+	public static val VARIABLES_NOT_IMPLEMENTED = ISSUE_CODE_PREFIX + 'VariablesNotImplemented'
+	@Check
+	def checkAbstractVariables(Device device){
+		if (!(device instanceof AbstractDevice)){
+			
+			
+			var vars = device.findRecursive(Variable)
+			
+			val varsWithValue = vars.filter[v | v.value !== null].map[it.name].toList
+			var toBeImplemented  = vars.filter[v | v.value === null].filter[v | !(varsWithValue.contains(v.name))]			
+			
+			if(!toBeImplemented.isEmpty){
+				error(
+					"Variables from inheritance needs to be assigned a value",
+					IoTPackage.Literals.DEVICE__NAME,
+					VARIABLES_NOT_IMPLEMENTED,
+					toBeImplemented.map[it.name].toList
+				)
+			}		
+		}
+	}
+	
 }

@@ -26,5 +26,6 @@ Export-Package: sdu.mdsd.parser.antlr,
  sdu.mdsd.ioT.impl,
  sdu.mdsd.serializer,
  sdu.mdsd.scoping,
- sdu.mdsd.generator
+ sdu.mdsd.generator,
+ sdu.mdsd.formatting2
 Import-Package: org.apache.log4j

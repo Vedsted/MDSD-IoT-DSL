@@ -4,6 +4,13 @@
 package sdu.mdsd.ui.quickfix
 
 import org.eclipse.xtext.ui.editor.quickfix.DefaultQuickfixProvider
+import org.eclipse.xtext.ui.editor.quickfix.IssueResolutionAcceptor
+import sdu.mdsd.validation.IoTValidator
+import org.eclipse.xtext.validation.Issue
+import org.eclipse.xtext.ui.editor.quickfix.Fix
+import sdu.mdsd.ioT.Device
+import sdu.mdsd.ioT.Variable
+import sdu.mdsd.ioT.IoTFactory
 
 /**
  * Custom quickfixes.
@@ -12,13 +19,23 @@ import org.eclipse.xtext.ui.editor.quickfix.DefaultQuickfixProvider
  */
 class IoTQuickfixProvider extends DefaultQuickfixProvider {
 
-//	@Fix(IoTValidator.INVALID_NAME)
-//	def capitalizeName(Issue issue, IssueResolutionAcceptor acceptor) {
-//		acceptor.accept(issue, 'Capitalize name', 'Capitalize the name.', 'upcase.png') [
-//			context |
-//			val xtextDocument = context.xtextDocument
-//			val firstLetter = xtextDocument.get(issue.offset, 1)
-//			xtextDocument.replace(issue.offset, 1, firstLetter.toUpperCase)
-//		]
-//	}
+	@Fix(IoTValidator.VARIABLES_NOT_IMPLEMENTED)
+	def generateMissingVariables(Issue issue, IssueResolutionAcceptor acceptor) {
+		acceptor.accept(
+			issue,
+			"Generate missing variables",
+			"Generate missing variables: " + issue.data.reduce[p1, p2| p1 + ', ' + p2],
+			"Entity.gif",
+			[
+				element, context |
+				issue.data.forEach[s |
+					var v = IoTFactory.eINSTANCE.createVariable()
+					v.name = s
+					v.value = IoTFactory.eINSTANCE.createIntExpression() => [ value = 0]
+					var device = (element as Device)
+					device.program.variables.add(v)
+				]
+			]
+		)	
+	}
 }
