@@ -1,16 +1,17 @@
-abstract abs1 {
-	var x = 5
-}
-
-abstract abs2: abs1 {
-	var x = 5
-}
-
-abstract abs3: abs2 {
-	var x = 5
+abstract abs {
+	var x
+	var y
+	var z
 }
 
 
-abstract abs4 : abs1, abs3 {
+
+controller test : abs {
+	var x = 0
+	var y = 0
+	var z = 0
 	
-} 
+	every 1 SECONDS {
+		read var y -> to y 
+	}
+}
