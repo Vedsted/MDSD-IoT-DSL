@@ -51,8 +51,9 @@ class IoTGenerator extends AbstractGenerator {
 		val nonAbstractDevices = resource.allContents.filter(Device).nonAbstractDevices
 		
 		for (nonAbstractDev : nonAbstractDevices.toList) {
-			val h = nonAbstractDev.deviceHierarchy.toList.reverse
-			println(h)
+			val varOrLists = nonAbstractDev.findTypesInHierarchy(VarOrList)
+			
+			println(varOrLists)
 		}
 		
 		

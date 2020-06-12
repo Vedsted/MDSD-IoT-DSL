@@ -3,6 +3,15 @@
  */
 package sdu.mdsd.validation
 
+import org.eclipse.xtext.validation.Check
+import sdu.mdsd.ioT.Device
+import java.util.ArrayList
+import sdu.mdsd.ioT.IoTPackage
+import com.google.inject.Inject
+import sdu.mdsd.utils.IoTUtils
+import static extension java.lang.Character.*
+import sdu.mdsd.ioT.Model
+import sdu.mdsd.ioT.VarOrList
 
 /**
  * This class contains custom validation rules. 
@@ -10,6 +19,21 @@ package sdu.mdsd.validation
  * See https://www.eclipse.org/Xtext/documentation/303_runtime_concepts.html#validation
  */
 class IoTValidator extends AbstractIoTValidator {
+	
+	/*
+	 * Validation issue codes.
+	 * Used by e.g. quickfix or testing to know which validation rules that was broken
+	 */
+	protected static val ISSUE_CODE_PREFIX = "sdu.mdsd.ioT";
+	public static val HIERARCHY_CYCLE = ISSUE_CODE_PREFIX + "HierarchyCycle";
+	public static val EXTENDS_NON_ABSTRACT_DEVICE = ISSUE_CODE_PREFIX + "ExtendsNonAbstractDevice";
+	public static val EXTENDED_DEVICE_NOT_OF_SAME_TYPE = ISSUE_CODE_PREFIX + "ExtendedDeviceNotOfSameType";
+	public static val DIAMOND_PROBLEM = ISSUE_CODE_PREFIX + "DiamondProblem";
+	public static val DUPLICATE_VAR_OR_LIST = ISSUE_CODE_PREFIX + "DuplicateVarOrList";
+	
+	public static val DEVICE_NAME_LOWER_CASE = ISSUE_CODE_PREFIX + "DeviceNameLowerCase";
+	public static val VAR_OR_LIST_UPPER_CASE = ISSUE_CODE_PREFIX + "VarOrListUpperCase";
+	
 	
 //	public static val INVALID_NAME = 'invalidName'
 //
@@ -21,5 +45,141 @@ class IoTValidator extends AbstractIoTValidator {
 //					INVALID_NAME)
 //		}
 //	}
+
+	@Inject extension IoTUtils
+
+	/*
+	 * 
+	 * 
+	 * Warnings
+	 * 
+	 * 
+	 */
+
+	@Check
+	def checkDeviceNameStartsWithCapital(Device device) {
+		if (device.name.charAt(0).lowerCase) {
+			warning("Device name should start with a capital",
+					 IoTPackage.eINSTANCE.device_Name,
+					 DEVICE_NAME_LOWER_CASE, // Issue code
+					 device.name) // Issue data
+		}
+	}
 	
+	@Check
+	def checkVariableNameStartsWithLowercase(VarOrList vol) {
+		if (vol.name.charAt(0).upperCase) {
+			warning("Variable should start with a lower-case",
+					 IoTPackage.eINSTANCE.varOrList_Name,
+					 VAR_OR_LIST_UPPER_CASE, // Issue code
+					 vol.name) // Issue data
+		}
+	}
+	
+	/*
+	 * 
+	 * 
+	 * Abstract Devices Errors
+	 * 
+	 * 
+	 */
+	
+	@Check
+	def checkDeviceCanOnlyExtendAbstractDevices(Device device) {
+		for (superType : device.deviceHierarchyDFS) {
+			if (!superType.isIsAbstract) {
+				error("Extended devices must be marked 'abstract'",
+					IoTPackage.eINSTANCE.device_SuperTypes,
+					EXTENDS_NON_ABSTRACT_DEVICE) // Issue code
+				return
+			}
+		}
+		return
+	}
+	
+	@Check
+	def checkDeviceCanOnlyExtendItsOwnType(Device device) {
+		val allowedExtensionType = device.class
+		
+		for (superType : device.deviceHierarchyDFS) {
+			if (superType.class != allowedExtensionType) {
+				error("Extended devices must be of type '" + device.friendlyTypeName + "'",
+					IoTPackage.eINSTANCE.device_SuperTypes,
+					EXTENDED_DEVICE_NOT_OF_SAME_TYPE
+				)
+				return
+			}
+		}
+		return
+	}
+	
+	/*
+	 * Check that no common base exists in the hierarchy.
+	 * This should forbid cases of: Diamonds and Cycles
+	 * 
+	 * Implemented using Depth-first search
+	 */
+	@Check
+	def checkCommonBaseInDeviceHierarchy(Device device) {		
+		val hierarchy = newLinkedHashSet
+		
+		var stack = new ArrayList<Device>();
+		stack.add(device)
+		
+		while (stack.length > 0) {
+			val current = stack.get(stack.length - 1) // Pop the last element
+			stack.remove(current)
+			
+			if (current != device) { // Don't add the initial device to the hierarchy
+				
+				if (!hierarchy.contains(current)) {
+					hierarchy.add(current)
+				} else {
+					error("Common super type detected'" + current.name + "'",
+						IoTPackage.eINSTANCE.device_SuperTypes,
+						DIAMOND_PROBLEM
+					)
+					return
+				}
+			}
+			
+			for (superType : current.superTypes) {
+				
+				if (superType == current) { // Cycle on the device itself detected
+					error("Extending the device itself is not allowed.",
+						IoTPackage.eINSTANCE.device_SuperTypes,
+						HIERARCHY_CYCLE
+					)
+					return
+				}
+				
+				if (stack.contains(superType)) {
+					error("Common super type detected'" + current.name + "'",
+						IoTPackage.eINSTANCE.device_SuperTypes,
+						DIAMOND_PROBLEM
+					)
+				}
+				
+				stack.add(superType)
+			}
+		}
+		
+		return
+	}
+	
+	@Check
+	def checkNoDuplicateVarOrListNamesInHierarchy(Device d) {
+		
+		val t = d.findTypesInHierarchy(VarOrList).groupBy[k | k.name]
+		val s = t.filter[p1, p2| p2.length > 1]
+		
+		if (!s.empty) {
+			error("Duplicate variable name in hierarchy detected for device '" + d.name + "', variable '" + s.keySet.get(0) + "'",
+						IoTPackage.eINSTANCE.device_SuperTypes,
+						DUPLICATE_VAR_OR_LIST
+					)
+		}
+		
+		return
+	}
 }

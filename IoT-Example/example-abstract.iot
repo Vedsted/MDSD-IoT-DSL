@@ -12,9 +12,10 @@ connectionConfig EdgeWifi {
 
 abstract edge device AbstractBase {
 	setup EdgeWifi
+	var basevar = 0
 }
 
-abstract edge device AbstractLightSensor extends AbstractBase {
+abstract edge device AbstractLightSensor {
 	list lightLevels
 	var lightLevel
 	var lower = 90
@@ -35,7 +36,7 @@ abstract edge device AbstractLightSensor extends AbstractBase {
 	}
 }
 
-abstract edge device AbstractLEDActuator extends AbstractBase {
+abstract edge device AbstractLEDActuator {
 	var turnOnLED = false
 	
 	every 500 MILLISECONDS {
@@ -47,7 +48,7 @@ abstract edge device AbstractLEDActuator extends AbstractBase {
 	}
 }
 
-edge device Harvester extends AbstractLightSensor, AbstractLEDActuator {
+edge device Harvester extends AbstractLightSensor, AbstractLEDActuator, AbstractBase {
 	
 	var isEmpty
 	
@@ -91,4 +92,8 @@ fog device Controller {
 			read var turnOn -> send to Harvester
 		}
 	}
+}
+
+cloud device Service {
+	listen on 192.168.0.3:8123 -> ext_print of value
 }

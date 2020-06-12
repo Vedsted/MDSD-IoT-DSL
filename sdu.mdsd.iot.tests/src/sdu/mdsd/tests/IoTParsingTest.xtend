@@ -11,20 +11,233 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
 import sdu.mdsd.ioT.Model
+import sdu.mdsd.utils.IoTUtils
+import java.util.ArrayList
+import sdu.mdsd.ioT.Device
+import sdu.mdsd.ioT.VarOrList
 
 @ExtendWith(InjectionExtension)
 @InjectWith(IoTInjectorProvider)
 class IoTParsingTest {
 	@Inject
-	ParseHelper<Model> parseHelper
+	ParseHelper<Model> parseHelper // This will parse strings of type Model which is the root of the DSL
+	
+	@Inject extension IoTUtils
 	
 	@Test
-	def void loadModel() {
-		val result = parseHelper.parse('''
-			Hello Xtext!
+	def void parseSimpleProgram() {
+		val model = parseHelper.parse('''		
+		external ext_print // external function for printing
+		
+		connectionConfig EdgeWifi {
+			type:WLAN
+			"ssid":"CableBox-9655-2_4Ghz"
+			"password": "pwd123"
+		}
+		
+		edge device MyEdge {
+			setup EdgeWifi
+			var NIL
+			var myVar = 123
+			
+			always {
+				ext_print of basevar -> to NIL
+			}
+		}
+		
+		fog device MyFog {
+			setup EdgeWifi
+			var NIL
+			var myVar = 123
+			
+			always {
+				ext_print of basevar -> to NIL
+			}
+		}
+		
+		cloud device MyCloud {
+			listen on 192.168.0.3:8124 -> ext_print of value
+		}
 		''')
-		Assertions.assertNotNull(result)
-		val errors = result.eResource.errors
+		
+		Assertions.assertNotNull(model)
+		val errors = model.eResource.errors
 		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
+	}
+	
+	@Test
+	def void parseExternalDeclarations() {
+		val model = testModel
+		
+		// Assert that the external functions are passed correctly
+		val ext = model.externalDeclarations.get(0)
+		Assertions.assertNotNull(ext)
+		Assertions.assertEquals(ext.name, "ext_print")
+	}
+	
+	@Test
+	def void parseHierarchy() {
+		val model = testModel
+		
+		// Assert that the class hierarchy are parsed correctly
+		val subdevice = model.devices.filter[d | d.name == "Harvester"].get(0)
+		val superdevice1 = model.devices.filter[d | d.name == "LightSensor"].get(0)
+		val superdevice2 = model.devices.filter[d | d.name == "LEDActuator"].get(0)
+		val superdevice3 = model.devices.filter[d | d.name == "EdgeWifi"].get(0)
+		val superdevice4 = model.devices.filter[d | d.name == "LightBase"].get(0)
+		
+		// We expect the same order as they are declared in the DSL
+		Assertions.assertEquals(superdevice1, subdevice.superTypes.get(0))
+		Assertions.assertEquals(superdevice2, subdevice.superTypes.get(1))
+		Assertions.assertEquals(superdevice3, subdevice.superTypes.get(2))
+		Assertions.assertEquals(superdevice4, superdevice1.superTypes.get(0))
+	}
+	
+	@Test
+	def void parseHierarchyOrder() {
+		val model = testModel
+		
+		val subdevice = model.devices.filter[d | d.name == "Harvester"].get(0)
+		val superdevice1 = model.devices.filter[d | d.name == "LightSensor"].get(0)
+		val superdevice2 = model.devices.filter[d | d.name == "LightBase"].get(0)
+		val superdevice3 = model.devices.filter[d | d.name == "LEDActuator"].get(0)
+		val superdevice4 = model.devices.filter[d | d.name == "EdgeWifi"].get(0)
+		
+		val hierarchyVisitOrder = subdevice.deviceHierarchyDFS2
+		
+		// We expect that the hierarchy is ordered from high priority -> low priority
+		Assertions.assertEquals(subdevice, hierarchyVisitOrder.get(0))
+		Assertions.assertEquals(superdevice1, hierarchyVisitOrder.get(1))
+		Assertions.assertEquals(superdevice2, hierarchyVisitOrder.get(2))
+		Assertions.assertEquals(superdevice3, hierarchyVisitOrder.get(3))
+		Assertions.assertEquals(superdevice4, hierarchyVisitOrder.get(4))
+	}
+	
+	@Test
+	def void parseHierarchyVarOrList() {
+		val model = testModel
+		
+		val subdevice = model.devices.filter[d | d.name == "Harvester"].get(0)
+		
+		val hierarchyVarOrList = subdevice.findTypesInHierarchy(VarOrList)
+		
+		Assertions.assertEquals(subdevice, hierarchyVarOrList.get(0))
+	}
+	
+	def getTestModel() {
+		parseHelper.parse('''		
+		external ext_print // external function for printing
+		
+		connectionConfig EdgeWifi {
+			type:WLAN
+			"ssid":"CableBox-9655-2_4Ghz"
+			"password": "pwd123"
+		}
+			
+		abstract edge device EdgeWifi {
+			setup EdgeWifi
+			var basevar = 123
+			
+		}
+		
+		abstract edge device LightBase {
+			var NIL
+			var lightbaseVar = 123
+			
+			every 2 SECONDS {
+				ext_print of lightbaseVar -> to NIL
+			}
+		}
+		
+		abstract edge device LightSensor extends LightBase {
+			list lightLevels
+			var lightLevel
+			var lower = 90
+			var upper = 300
+			var NIL2
+			
+			/*
+			 * Read light level loop
+			 */
+			every 1 SECONDS {
+				read from LIGHTSENSOR -> to lightLevel
+				ext_print of lightLevel -> to NIL2
+				
+				// Record values that are exceeding boundaries
+				if lightLevel > lower && lightLevel < upper{
+					read var lightLevel -> add to lightLevels
+				}
+			}
+		}
+		
+		abstract edge device LEDActuator {
+			var LEDAction = 0
+			var NIL
+			
+			/*
+			 * Actuator loop
+			 */
+			every 1 SECONDS {
+				ext_print of LEDAction -> to NIL
+			}
+		}
+		
+		edge device Harvester extends LightSensor, LEDActuator, EdgeWifi{
+			//setup EdgeWifi
+			
+			var isEmpty = true
+			
+			/*
+			 * Send to fog controller loop
+			 */
+			always {
+				//ext_isEmpty of lightLevels -> to isEmpty
+				
+				if isEmpty == false {
+					LED ON // Indicate network activity
+					//ext_pop of lightLevels -> send to FogController
+					LED OFF
+				}		
+			}
+		}
+		
+		fog device FogController {
+			
+			list lightLevels
+			var listLength
+			var threshold = 10
+			var lightLevelAvg
+			var NIL
+			
+			/*
+			 * Setup server for communicating with edge-nodes
+			 */
+			listen on 192.168.0.3:8123 -> add to lightLevels
+			
+			
+			/*
+			 * Thread that calculates avg and sends it to the cloud
+			 */
+			always {
+				ext_length of lightLevels -> to listLength
+				
+				if listLength >= threshold {
+					ext_print of listLength -> to NIL
+					ext_avg of lightLevels -> to lightLevelAvg
+					read var lightLevelAvg -> send to CloudService
+					clear lightLevels
+				}
+			}
+		}
+		
+		
+		cloud device CloudService {
+			
+			/*
+			 * Setup server for communicating with fog-nodes
+			 */
+			listen on 192.168.0.3:8124 -> ext_print of value
+		}
+		''')
 	}
 }
