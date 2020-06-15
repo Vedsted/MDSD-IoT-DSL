@@ -20,7 +20,7 @@ class SensorInControllerTests {
 	@Test
 	def void sensorInController() {
 		'''
-			controller test : abs {
+			controller test {
 				var y = 0
 				
 				every 1 SECONDS {

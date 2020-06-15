@@ -48,6 +48,14 @@ class CyclicDeclarationValidationTests {
 		'''.parse.assertCyclicDeclaration(IoTPackage.eINSTANCE.abstractDevice, 'abs1')
 	}
 	
+	@Test
+	def void cyclicDeclaration() {
+		'''
+			abstract abs1 : abs2 {}
+			abstract abs2 : abs1 {}
+		'''.parse.assertCyclicDeclaration(IoTPackage.eINSTANCE.abstractDevice, 'abs1') // error is found in both abs 1 and 2, but 1 is first
+	}
+	
 	private def assertCyclicDeclaration(Model m, EClass type, String name) {
 		m.assertError(
 			type, 
