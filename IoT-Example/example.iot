@@ -1,4 +1,3 @@
-/*
 external log
 
 abstract abs {
@@ -9,10 +8,10 @@ abstract abs {
 }
 
 abstract abs2 {
-	var x
+	var y
 }
 
-iot test : abs, abs2{
-	var x = 5 
-} 
-*/
+iot test : abs, abs2{ 
+	var y = 0
+ 	ip x = 192.168.1.1
+}

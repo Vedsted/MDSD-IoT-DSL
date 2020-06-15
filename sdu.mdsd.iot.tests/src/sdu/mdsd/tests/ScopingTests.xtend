@@ -86,4 +86,13 @@ class ScopingTests {
 		controller c : a, b {var x1 = 5 var x2 = 1} 
 		'''.parse.assertNoErrors
 	}
+	
+	@Test
+	def validInheritanceTest2(){
+		'''
+		abstract abs1 {	var x }
+		abstract abs2: abs1 { var x = 5 }
+		iot test : abs2 { }
+		'''.parse.assertNoErrors
+	}
 }

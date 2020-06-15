@@ -72,7 +72,7 @@ class IoTValidator extends AbstractIoTValidator {
 		val visited = new HashSet<String>()
 		
 		device.extending.forEach[e |
-			e.findRecursive(VarOrList).forEach[vl | 
+			e.findRecursive(VarOrList).findUniqueByName.forEach[vl | 
 				if (visited.contains(vl.name)){
 					var type = vl.extractPreFix
 					error(
@@ -86,6 +86,18 @@ class IoTValidator extends AbstractIoTValidator {
 			] 
 		]
 		
+	}
+	
+	private def findUniqueByName(List<VarOrList> l){
+		val names = newArrayList
+		l.filter[e | 
+			if (names.contains(e.name)) {
+				false
+			} else {
+				names.add(e.name)
+				true
+			}
+		]
 	}
 	
 	private def extractPreFix(VarOrList v) {

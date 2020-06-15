@@ -356,10 +356,10 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def getSendToDevice(Device targetDevice) {
-		var connectionList = this.currentDevice.program.connectStatements.filter([device == targetDevice]).toList
+		var connectionList = this.currentDevice.findRecursive(ConnectStatement).filter([device == targetDevice]).toList
 		var connection = connectionList.length > 0
 				? connectionList.get(0)
-				: targetDevice.eAllContents.filter(ListenStatement).toList.get(0)
+				: targetDevice.findRecursive(ListenStatement).toList.get(0)
 
 		return switch (connection) {
 			ConnectStatement: currentDevice.serialWrite(targetDevice) // Send over serial
@@ -388,7 +388,7 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def CharSequence readFromDevice(Device sourceDevice) {
-		var connectionList = this.currentDevice.program.connectStatements.filter([device == sourceDevice]).toList
+		var connectionList = this.currentDevice.findRecursive(ConnectStatement).filter([device == sourceDevice]).toList
 		var connection = connectionList.length > 0 ? connectionList.get(0) : throw new Exception("A connection to the device not found")
 		val type = connection.configuration.type
 		switch (currentDevice) {
@@ -435,12 +435,12 @@ class IoTGenerator extends AbstractGenerator {
 			
 			# Initializer
 			
-			«IF (getExternals(device).length > 0)»
+			«IF (device.getExternals.length > 0)»
 				# You need to declare and implement: «FOR moduleName : getExternals(device) SEPARATOR(',')» «moduleName» «ENDFOR»
 				import externals
 			«ENDIF»
 			
-			«FOR connectionStatement : device.program.connectStatements»
+			«FOR connectionStatement : device.findRecursive(ConnectStatement)»
 				«connectionStatement.convConfigurationController»
 			«ENDFOR»
 			
