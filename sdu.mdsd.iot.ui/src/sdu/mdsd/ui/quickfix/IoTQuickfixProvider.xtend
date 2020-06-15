@@ -11,6 +11,8 @@ import org.eclipse.xtext.ui.editor.quickfix.Fix
 import sdu.mdsd.ioT.Device
 import sdu.mdsd.ioT.Variable
 import sdu.mdsd.ioT.IoTFactory
+import java.util.ArrayList
+import sdu.mdsd.ioT.VarOrList
 
 /**
  * Custom quickfixes.
@@ -28,11 +30,15 @@ class IoTQuickfixProvider extends DefaultQuickfixProvider {
 			"Entity.gif",
 			[
 				element, context |
+				
+				val device = (element as Device)
+				if (device.program === null){
+					device.program = IoTFactory.eINSTANCE.createProgram
+				}
 				issue.data.forEach[s |
 					var v = IoTFactory.eINSTANCE.createVariable()
 					v.name = s
 					v.value = IoTFactory.eINSTANCE.createIntExpression() => [ value = 0]
-					var device = (element as Device)
 					device.program.variables.add(v)
 				]
 			]

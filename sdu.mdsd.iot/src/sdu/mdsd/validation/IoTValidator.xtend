@@ -14,6 +14,13 @@ import sdu.mdsd.ioT.SENSOR
 import sdu.mdsd.ioT.AbstractDevice
 import sdu.mdsd.ioT.Variable
 import static extension sdu.mdsd.utils.FindUtil.findRecursive
+import static extension sdu.mdsd.utils.FindUtil.findContainingDevice 
+import sdu.mdsd.ioT.SendCommand
+import sdu.mdsd.ioT.ListenStatement
+import sdu.mdsd.ioT.PyList
+import sdu.mdsd.ioT.VarOrList
+import java.util.HashSet
+import sdu.mdsd.ioT.IpVariable
 
 /**
  * This class contains custom validation rules. 
@@ -26,9 +33,7 @@ class IoTValidator extends AbstractIoTValidator {
 	public static val CYCLIC_DECLARATION = ISSUE_CODE_PREFIX + 'CyclicDeclaration'
 	@Check
 	def checkCyclicInheritance(Device device) {
-		var ArrayList<Device> parents = newArrayList
-				
-		if (device.hasCyclicDeclaration(parents)) {
+		if (device.hasCyclicDeclaration) {
 			error(
 				"Cyclic declaration found in device: '" + device.name + "'", 
 				IoTPackage.Literals.DEVICE__EXTENDING, 
@@ -36,22 +41,62 @@ class IoTValidator extends AbstractIoTValidator {
 			)
 		}
 	}
-		
+	
+	private def boolean hasCyclicDeclaration(Device device) {
+		device.hasCyclicDeclaration(newArrayList)
+	}
+	
 	private def boolean hasCyclicDeclaration(Device device, List<Device> l) {		
 		// device already found
 		if (l.contains(device)) 
 			return true
 		
+		// Add device to visited list
+		l.add(device)
+		
 		// Add device to visited and check for extending
 		for (e : device.extending) {
-			l.add(device)
 			if (e.hasCyclicDeclaration(l))
 				return true	
 		}
 		
-		l.add(device)
 		return false
 	}
+	
+	
+	public static val CONFILCTING_INHERITANCE = ISSUE_CODE_PREFIX + 'ConflictingInheritance'
+	@Check
+	def checkConflictingInhentitance(Device device){
+		if (device.hasCyclicDeclaration) return
+		
+		val visited = new HashSet<String>()
+		
+		device.extending.forEach[e |
+			e.findRecursive(VarOrList).forEach[vl | 
+				if (visited.contains(vl.name)){
+					var type = vl.extractPreFix
+					error(
+						'''Conflict in inherited variables for '«type» «vl.name»' ''',
+						IoTPackage.Literals.DEVICE__EXTENDING,
+						CONFILCTING_INHERITANCE
+					)
+				} else {
+					visited.add(vl.name)
+				}
+			] 
+		]
+		
+	}
+	
+	private def extractPreFix(VarOrList v) {
+		switch v {
+			Variable: "var"
+			PyList: "list"
+			IpVariable: "ip"
+			default: throw new Exception("VarOrList type not supported")
+		}
+	}
+	
 	
 	public static val SENSOR_IN_CONTROLLER = ISSUE_CODE_PREFIX + 'SensorInController'
 	@Check
@@ -85,12 +130,14 @@ class IoTValidator extends AbstractIoTValidator {
 	@Check
 	def checkAbstractVariables(Device device){
 		if (!(device instanceof AbstractDevice)){
-			
-			
+						
 			var vars = device.findRecursive(Variable)
 			
-			val varsWithValue = vars.filter[v | v.value !== null].map[it.name].toList
-			var toBeImplemented  = vars.filter[v | v.value === null].filter[v | !(varsWithValue.contains(v.name))]			
+			val varsWithValue = vars.filter[v | v.value !== null]
+									.map[it.name]
+									.toList
+			var toBeImplemented = vars.filter[v | v.value === null]
+									.filter[v | !(varsWithValue.contains(v.name))]			
 			
 			if(!toBeImplemented.isEmpty){
 				error(
@@ -103,4 +150,60 @@ class IoTValidator extends AbstractIoTValidator {
 		}
 	}
 	
+	public static val IP_NOT_DECLARED = ISSUE_CODE_PREFIX + 'IpNotDeclared'
+	@Check
+	def checkAbstractIP(Device device){
+		if (!(device instanceof AbstractDevice)){
+						
+			var ips = device.findRecursive(IpVariable)
+			
+			val ipsWithValue = ips.filter[v | v.value !== null].map[it.name].toList
+			var toBeImplemented  = ips.filter[v | v.value === null].filter[v | !(ipsWithValue.contains(v.name))]			
+			
+			if(!toBeImplemented.isEmpty){
+				error(
+					'''IP's  [«FOR i : toBeImplemented SEPARATOR(',')» «i.name» «ENDFOR»] from inheritance needs to be assigned a value''',
+					IoTPackage.Literals.DEVICE__NAME,
+					IP_NOT_DECLARED
+				)
+			}		
+		}
+	}
+	
+	public static val SENDTO_POINTING_TO_ABSTRACT = ISSUE_CODE_PREFIX + 'SendToPointingToAbstract'
+	public static val SENDTO_TARGET_NOT_LISTENING = ISSUE_CODE_PREFIX + 'SendToTargetNotListening'
+	@Check
+	def checkSendToTarget(SendCommand sc){
+		if (sc.target instanceof  AbstractDevice) {
+			error (
+				"Can not send value(s) to abstract device: '" + sc.target.name + "'",
+				IoTPackage.Literals.SEND_COMMAND__TARGET,
+				SENDTO_POINTING_TO_ABSTRACT
+			)
+		} else if (sc.target.findRecursive(ListenStatement).empty){
+			error (
+				"Target device: '"+sc.target.name+"' not listening for incoming traffic",
+				IoTPackage.Literals.SEND_COMMAND__TARGET,
+				SENDTO_TARGET_NOT_LISTENING
+			)
+		}
+	}
+	
+	
+	
+	public static val LIST_EXISTS_IN_SCOPE = ISSUE_CODE_PREFIX + 'ListExistsInScope'
+	@Check
+	def checkduplicateListDefinition(PyList list){
+		var d = list.findContainingDevice
+		
+		d.extending.forEach[e | e.findRecursive(PyList).forEach[ l | 
+			if (list.name == l.name){
+				error(
+					'''List '«list.name»' already defined in scope''',
+					IoTPackage.Literals.VAR_OR_LIST__NAME,
+					LIST_EXISTS_IN_SCOPE
+				)
+			}	
+		]]
+	}
 }
