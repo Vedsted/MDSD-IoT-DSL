@@ -3,6 +3,18 @@
  */
 package sdu.mdsd.scoping
 
+import org.eclipse.xtext.scoping.IScope
+import org.eclipse.emf.ecore.EObject
+import org.eclipse.emf.ecore.EReference
+import sdu.mdsd.ioT.IoTPackage
+import sdu.mdsd.ioT.Device
+import sdu.mdsd.ioT.Variable
+import sdu.mdsd.utils.FindUtil
+import com.google.inject.Inject
+import static extension sdu.mdsd.utils.FindUtil.findRecursive
+import static extension sdu.mdsd.utils.FindUtil.findContainingDevice
+import org.eclipse.xtext.scoping.Scopes
+import sdu.mdsd.ioT.VarOrList
 
 /**
  * This class contains custom scoping description.
@@ -11,5 +23,16 @@ package sdu.mdsd.scoping
  * on how and when to use it.
  */
 class IoTScopeProvider extends AbstractIoTScopeProvider {
-
+	
+	val ep = IoTPackage.eINSTANCE
+	
+	override IScope getScope(EObject context, EReference ref) {
+		return switch ref {
+			case ep.toVar_Variable,
+			case ep.readVariable_Value,
+			case ep.varAccess_VariableName: Scopes.scopeFor(context.findContainingDevice.findRecursive(Variable))
+			case ep.externalOf_Target: Scopes.scopeFor(context.findContainingDevice.findRecursive(VarOrList))
+			default: super.getScope(context, ref)  	
+		}
+	}
 }

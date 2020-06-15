@@ -3,6 +3,7 @@ package sdu.mdsd.utils
 import sdu.mdsd.ioT.Device
 import java.util.ArrayList
 import java.util.List
+import org.eclipse.emf.ecore.EObject
 
 class FindUtil {
 		
@@ -21,5 +22,12 @@ class FindUtil {
 		// Check extending
 		device.extending.forEach[a|a.findRecursive(cls, found)]
 		return found
+	}
+	
+	def static Device findContainingDevice(EObject o){
+		return switch o {
+			Device: o
+			default: o.eContainer.findContainingDevice
+		}
 	}
 }
