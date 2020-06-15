@@ -85,7 +85,6 @@ class IoTValidator extends AbstractIoTValidator {
 				}
 			] 
 		]
-		
 	}
 	
 	private def findUniqueByName(List<VarOrList> l){
