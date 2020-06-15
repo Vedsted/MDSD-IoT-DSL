@@ -1,17 +1,46 @@
-external log
+external median
+external persist
 
-abstract abs {
-	ip x
-	list l
+connectionConfig myNetwork {
+	type : WLAN
+	"ssid":"Vedsted"
+	"password": "Lars1234"
+}
+
+controller storageServer {
+	listen on 192.168.1.5:8080 -> persist of value
+}
+
+abstract lightSampler {
+	list values
+	var samplingRate
 	
-	listen on x:80 -> add to l 
+	every samplingRate SECONDS {
+		read from LIGHTSENSOR -> add to values
+	}
 }
 
-abstract abs2 {
-	var y
+abstract medianLightTransmitter : lightSampler {
+	var transmitRate = 60
+	
+	every transmitRate SECONDS {
+		median of values -> send to storageServer
+	}
 }
 
-iot test : abs, abs2{ 
-	var y = 0
- 	ip x = 192.168.1.1
+abstract wifiConnector {
+	setup myNetwork
+}
+
+iot fastSampler : medianLightTransmitter , wifiConnector {
+	var samplingRate = 1
+}
+
+iot mediumSampler : medianLightTransmitter , wifiConnector {
+	var samplingRate = 5
+}
+
+iot slowSampler : medianLightTransmitter , wifiConnector {
+	var samplingRate = 60
+	var transmitRate = 240
 }
