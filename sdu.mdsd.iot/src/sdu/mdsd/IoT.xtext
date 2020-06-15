@@ -79,7 +79,12 @@ Program:
 ;
 
 ListenStatement:
-	'listen' 'on' ip=IP ':' port=INT '->' body=ExpressionRight
+	'listen' 'on' ip=LSIP':' port=INT '->' body=ExpressionRight
+;
+
+LSIP:
+	{LSIP_IP} value=IP |
+	{LSIP_VAR} value=[IpVariable]
 ;
 
 WifiStatement:
@@ -96,9 +101,8 @@ Address:
 	{UnixSerialAddress} value=STRING // TODO: validation
 ;
 
-
 VarOrList:
-	({Variable}'var' name=ID  ('=' value=Expression)? | {PyList} 'list' name=ID) 
+	({Variable}'var' name=ID  ('=' value=Expression)? | {PyList} 'list' name=ID) | {IpVariable} 'ip' name=ID ('=' value=IP)?
 ;
 
 Loop:

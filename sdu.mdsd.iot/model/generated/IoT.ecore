@@ -44,11 +44,12 @@
         eType="#//Loop" containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ListenStatement">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="ip" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ip" eType="#//LSIP" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="port" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="body" eType="#//ExpressionRight"
         containment="true"/>
   </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="LSIP"/>
   <eClassifiers xsi:type="ecore:EClass" name="WifiStatement">
     <eStructuralFeatures xsi:type="ecore:EReference" name="connectionConfig" eType="#//ConnectionConfig"/>
   </eClassifiers>
@@ -120,6 +121,12 @@
   <eClassifiers xsi:type="ecore:EClass" name="ConnectionConfig" eSuperTypes="#//Config">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="LSIP_IP" eSuperTypes="#//LSIP">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="LSIP_VAR" eSuperTypes="#//LSIP">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" eType="#//IpVariable"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="IpAddress" eSuperTypes="#//Address"/>
   <eClassifiers xsi:type="ecore:EClass" name="WindowsSerialAddress" eSuperTypes="#//Address"/>
   <eClassifiers xsi:type="ecore:EClass" name="UnixSerialAddress" eSuperTypes="#//Address"/>
@@ -128,6 +135,9 @@
         containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="PyList" eSuperTypes="#//VarOrList"/>
+  <eClassifiers xsi:type="ecore:EClass" name="IpVariable" eSuperTypes="#//VarOrList">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="MILLISECONDS" eSuperTypes="#//TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="SECONDS" eSuperTypes="#//TIMEUNIT"/>
   <eClassifiers xsi:type="ecore:EClass" name="MINUTES" eSuperTypes="#//TIMEUNIT"/>

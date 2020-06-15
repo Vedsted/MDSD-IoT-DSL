@@ -38,10 +38,11 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Program/loops"/>
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//ListenStatement">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//ListenStatement/ip"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//ListenStatement/ip"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//ListenStatement/port"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//ListenStatement/body"/>
     </genClasses>
+    <genClasses ecoreClass="IoT.ecore#//LSIP"/>
     <genClasses ecoreClass="IoT.ecore#//WifiStatement">
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference IoT.ecore#//WifiStatement/connectionConfig"/>
     </genClasses>
@@ -105,6 +106,12 @@
     <genClasses ecoreClass="IoT.ecore#//ConnectionConfig">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//ConnectionConfig/type"/>
     </genClasses>
+    <genClasses ecoreClass="IoT.ecore#//LSIP_IP">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//LSIP_IP/value"/>
+    </genClasses>
+    <genClasses ecoreClass="IoT.ecore#//LSIP_VAR">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference IoT.ecore#//LSIP_VAR/value"/>
+    </genClasses>
     <genClasses ecoreClass="IoT.ecore#//IpAddress"/>
     <genClasses ecoreClass="IoT.ecore#//WindowsSerialAddress"/>
     <genClasses ecoreClass="IoT.ecore#//UnixSerialAddress"/>
@@ -112,6 +119,9 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference IoT.ecore#//Variable/value"/>
     </genClasses>
     <genClasses ecoreClass="IoT.ecore#//PyList"/>
+    <genClasses ecoreClass="IoT.ecore#//IpVariable">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute IoT.ecore#//IpVariable/value"/>
+    </genClasses>
     <genClasses ecoreClass="IoT.ecore#//MILLISECONDS"/>
     <genClasses ecoreClass="IoT.ecore#//SECONDS"/>
     <genClasses ecoreClass="IoT.ecore#//MINUTES"/>
