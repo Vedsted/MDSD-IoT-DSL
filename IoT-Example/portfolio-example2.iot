@@ -1,0 +1,51 @@
+external ext_isEmpty // Returns true if the list is empty
+external ext_pop	// Pop the first element of a list
+external ext_handleLightLevel
+
+connectionConfig EdgeWifi {
+	type:WLAN
+	"ssid":"MyWifiSSID"
+	"password": "MySecret"
+}
+
+edge device FastSampler {
+	setup EdgeWifi
+	var interval = 1
+	list lightLevels
+	var isEmpty
+	
+	every interval SECONDS {
+		read from LIGHTSENSOR 
+		-> add to lightLevels
+	}
+	
+	always {
+		ext_isEmpty of lightLevels -> to isEmpty
+		if isEmpty == false {
+			ext_pop of lightLevels -> send to Controller
+		}
+	}
+}
+
+edge device SlowSampler {
+	setup EdgeWifi
+	var interval = 10
+	list lightLevels
+	var isEmpty
+	
+	every interval SECONDS {
+		read from LIGHTSENSOR 
+		-> add to lightLevels
+	}
+	
+	always {
+		ext_isEmpty of lightLevels -> to isEmpty
+		if isEmpty == false {
+			ext_pop of lightLevels -> send to Controller
+		}
+	}
+}
+
+fog device Controller {
+	listen on 192.168.0.3:8123 -> ext_handleLightLevel of value
+}

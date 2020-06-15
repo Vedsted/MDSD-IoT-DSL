@@ -48,17 +48,10 @@ class IoTGenerator extends AbstractGenerator {
 		//    e.g. variable names of the same name gets overridden
 		//	  setup constructs etc. gets overridden as the object-graph is traversed
 		
-		val nonAbstractDevices = resource.allContents.filter(Device).nonAbstractDevices
-		
-		for (nonAbstractDev : nonAbstractDevices.toList) {
-			val varOrLists = nonAbstractDev.findTypesInHierarchy(VarOrList)
-			
-			println(varOrLists)
-		}
-		
-		
-		for (dev : resource.allContents.filter(Device).toList) {
-			fsa.generateFile('''«dev.name»/main.py''', dev.convDevice)
+		// Generate code for all non-abstract devices
+		val devices = resource.allContents.filter(Device).nonAbstractDevices
+		for (nonAbstractDev : devices.toList) {
+			fsa.generateFile('''«nonAbstractDev.name»/main.py''', nonAbstractDev.convDevice)
 		}
 	}
 
@@ -67,26 +60,40 @@ class IoTGenerator extends AbstractGenerator {
 	}
 
 	def getExternals(Device device) {
-		var names = device.eAllContents.filter(ExternalOf).map(e|e.method.name).toSet
-		names.addAll(device.eAllContents.filter(ExternalRight).map(e|e.method.name).toSet)
+		var names = device.findTypesInHierarchy(ExternalOf).map(e|e.method.name).toSet
+		names.addAll(device.findTypesInHierarchy(ExternalRight).map(e|e.method.name).toSet)
 
 		return names
 	}
 
 	def compile(EdgeDevice device) {
 		currentDevice = device;
-		var loopTexts = new ArrayList<CharSequence>();
-		for (var i = 0; i < device.program.loops.length; i++) {
-			val text = device.program.loops.get(i).convLoop(i);
-			loopTexts.add(text)
-		}
-		var sensorInits = device.eResource.allContents.filter(SENSOR).toList.convertSensorInitCode
+		
+		// Variable or Lists
+		val varOrLists = device.findTypesInHierarchy(VarOrList)		
+		
+		// Program loops
+		val loops = device.findTypesInHierarchy(Loop)
+		var loopCode = new ArrayList<CharSequence>();
+		for (var i = 0; i < loops.length; i++) {
+			val code = loops.get(i).convLoop(i);
+			loopCode.add(code)
+		}		
+		
+		// Sensor initialization
+		val sensorInits = device.findTypesInHierarchy(SENSOR).toList.convertSensorInitCode
 
 		// Used to detect which device to send commands to
-		var sendToCommands = device.eAllContents.filter(SendCommand).toMap([T|T.target.name], [V|V])
-		var listenStatements = device.eAllContents.filter(ListenStatement).toList
+		val sendToCommands = device.findTypesInHierarchy(SendCommand).toMap([T|T.target.name], [V|V])
+		val listenStatements = device.findTypesInHierarchy(ListenStatement).toList
 		
-		var string = '''
+		// TODO: There must be only one wifi statement in the hierarchy
+		val wifiStatements = device.findTypesInHierarchy(WifiStatement)
+		
+		// Connect statements
+		val connectStatements = device.findTypesInHierarchy(ConnectStatement)
+		
+		var microPythonCode = '''
 			import pycom
 			import time
 			import socket
@@ -104,11 +111,11 @@ class IoTGenerator extends AbstractGenerator {
 				pycom.heartbeat(False)
 			«ENDIF»
 			
-			«IF device.program.wifiStatements !== null»
-				«device.program.wifiStatements.convWifiStatement»
+			«IF wifiStatements.length > 0»
+				«wifiStatements.get(0).convWifiStatement»
 			«ENDIF»
 			
-			«FOR connectionStatement : device.program.connectStatements»
+			«FOR connectionStatement : connectStatements»
 				«connectionStatement.convConfigurationIoT»	
 				
 			«ENDFOR»
@@ -121,14 +128,14 @@ class IoTGenerator extends AbstractGenerator {
 				«ENDIF»
 			«ENDFOR»
 			
-			«FOR v : device.program.variables»
+			«FOR v : varOrLists»
 				«v.convToPy»
 			«ENDFOR»
 			
 			«sensorInits»
 			
-			«FOR t : loopTexts»
-				«t»
+			«FOR code : loopCode»
+				«code»
 			«ENDFOR»
 			
 			«insertSocketCode(listenStatements)»
@@ -136,14 +143,81 @@ class IoTGenerator extends AbstractGenerator {
 			
 		'''
 		currentDevice = null;
+		return microPythonCode
+	}
+	
+	def compile(Device device) {
+		currentDevice = device;
+		
+		// Variable or Lists
+		val varOrLists = device.findTypesInHierarchy(VarOrList)		
+		
+		// Program loops
+		val loops = device.findTypesInHierarchy(Loop)
+		var loopCode = new ArrayList<CharSequence>();
+		for (var i = 0; i < loops.length; i++) {
+			val code = loops.get(i).convLoop(i);
+			loopCode.add(code)
+		}
+
+		// Used to detect which device to send commands to
+		val sendToCommands = device.findTypesInHierarchy(SendCommand).toMap([T|T.target.name], [V|V])
+		val listenStatements = device.findTypesInHierarchy(ListenStatement).toList
+		
+		// Connect statements
+		val connectStatements = device.findTypesInHierarchy(ConnectStatement)
+
+		var string = '''
+			import serial
+			import time
+			import socket
+			import select
+			import sys
+			import _thread
+			
+			
+			# Initializer
+			
+			«IF (getExternals(device).length > 0)»
+				# You need to declare and implement: «FOR moduleName : getExternals(device) SEPARATOR(',')» «moduleName» «ENDFOR»
+				import externals
+			«ENDIF»
+			
+			«FOR connectionStatement : connectStatements»
+				«connectionStatement.convConfigurationController»
+			«ENDFOR»
+			
+			«FOR sendToCommand : sendToCommands.values»
+				«IF sendToCommand.target.program.listenStatements.size > 0»
+				socket«sendToCommand.target.name» = socket.socket()
+				socket«sendToCommand.target.name».setblocking(True)
+				socket«sendToCommand.target.name».connect(('«sendToCommand.target.program.listenStatements.get(0).ip»', «sendToCommand.target.program.listenStatements.get(0).port»))
+				«ENDIF»
+			«ENDFOR»
+			
+			«FOR v : varOrLists»
+				«v.convToPy»
+			«ENDFOR»
+			
+			«FOR code : loopCode»
+				«code»
+			«ENDFOR»
+			
+			«insertSocketCode(listenStatements)»
+			
+			# Do nothing forever, because the thread(s) started above would exit if this (main) thread exits.
+			while True:
+				time.sleep(100)
+		'''
+		currentDevice = null;
 		return string
 	}
 
 	def CharSequence convertSensorInitCode(List<SENSOR> s) {
-		var string = ""
+		var sensorInitCode = ""
 		if (s.filter(LIGHTSENSOR).size > 0) {
 
-			string += '''
+			sensorInitCode += '''
 				integration_time = LTR329ALS01.ALS_INT_50
 				measurement_rate = LTR329ALS01.ALS_RATE_50 
 				gain = LTR329ALS01.ALS_GAIN_1X 
@@ -151,15 +225,15 @@ class IoTGenerator extends AbstractGenerator {
 			'''
 		}
 		if (s.filter(TEMPERATURE).size > 0) {
-			string += '''
+			sensorInitCode += '''
 				p_out = Pin('P19', mode=Pin.OUT)
 				p_out.value(1)
 				adc = ADC()             # create an ADC object
 				apin = adc.channel(pin='P16', attn=2)   # create an analog pin on P16
 			'''
 		}
-		string
-
+		
+		return sensorInitCode
 	}
 
 	def convToPy(VarOrList vl) {
@@ -406,65 +480,6 @@ class IoTGenerator extends AbstractGenerator {
 			}
 		}
 		
-	}
-
-	def compile(Device device) {
-		currentDevice = device;
-		var loopTexts = new ArrayList<CharSequence>();
-		for (var i = 0; i < device.program.loops.length; i++) {
-			val text = device.program.loops.get(i).convLoop(i);
-			loopTexts.add(text)
-		}
-		var listenStatements = device.eAllContents.filter(ListenStatement).toList
-		
-		// Used to detect which device to send commands to
-		var sendToCommands = device.eAllContents.filter(SendCommand).toMap([T|T.target.name], [V|V])
-
-		var string = '''
-			import serial
-			import time
-			import socket
-			import select
-			import sys
-			import _thread
-			
-			
-			# Initializer
-			
-			«IF (getExternals(device).length > 0)»
-				# You need to declare and implement: «FOR moduleName : getExternals(device) SEPARATOR(',')» «moduleName» «ENDFOR»
-				import externals
-			«ENDIF»
-			
-			«FOR connectionStatement : device.program.connectStatements»
-				«connectionStatement.convConfigurationController»
-			«ENDFOR»
-			
-			«FOR sendToCommand : sendToCommands.values»
-				«IF sendToCommand.target.program.listenStatements.size > 0»
-				socket«sendToCommand.target.name» = socket.socket()
-				socket«sendToCommand.target.name».setblocking(True)
-				socket«sendToCommand.target.name».connect(('«sendToCommand.target.program.listenStatements.get(0).ip»', «sendToCommand.target.program.listenStatements.get(0).port»))
-				«ENDIF»
-			«ENDFOR»
-			
-			
-			«FOR v : device.program.variables»
-				«v.convToPy»
-			«ENDFOR»
-			
-			«FOR t : loopTexts»
-				«t»
-			«ENDFOR»
-			
-			«insertSocketCode(listenStatements)»
-			
-			# Do nothing forever, because the thread(s) started above would exit if this (main) thread exits.
-			while True:
-				time.sleep(100)
-		'''
-		currentDevice = null;
-		return string
 	}
 	
 	def String insertSocketCode(List<ListenStatement> listenStatements) {

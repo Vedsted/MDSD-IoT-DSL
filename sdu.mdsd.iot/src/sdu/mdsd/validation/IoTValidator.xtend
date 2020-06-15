@@ -10,7 +10,6 @@ import sdu.mdsd.ioT.IoTPackage
 import com.google.inject.Inject
 import sdu.mdsd.utils.IoTUtils
 import static extension java.lang.Character.*
-import sdu.mdsd.ioT.Model
 import sdu.mdsd.ioT.VarOrList
 
 /**
@@ -74,6 +73,26 @@ class IoTValidator extends AbstractIoTValidator {
 					 VAR_OR_LIST_UPPER_CASE, // Issue code
 					 vol.name) // Issue data
 		}
+	}
+	
+	@Check
+	def checkDuplicateVarOrListNamesInHierarchy(VarOrList varOrList) {
+		
+		val d = varOrList.eContainer.eContainer as Device
+		
+		val t = d.findTypesInHierarchy(VarOrList).groupBy[k | k.name]
+		val s = t.filter[p1, p2| p1 == varOrList.name && p2.length > 1]
+		
+		if (!s.empty) {
+			val superdev = s.values.get(0).get(0).eContainer.eContainer as Device
+			warning("Variable '" + varOrList.name + "'" + " overrides another variable inherited from '" + superdev.name + "'",
+						varOrList,
+						IoTPackage.eINSTANCE.varOrList_Name,
+						DUPLICATE_VAR_OR_LIST
+					)
+		}
+		
+		return
 	}
 	
 	/*
@@ -162,22 +181,6 @@ class IoTValidator extends AbstractIoTValidator {
 				
 				stack.add(superType)
 			}
-		}
-		
-		return
-	}
-	
-	@Check
-	def checkNoDuplicateVarOrListNamesInHierarchy(Device d) {
-		
-		val t = d.findTypesInHierarchy(VarOrList).groupBy[k | k.name]
-		val s = t.filter[p1, p2| p2.length > 1]
-		
-		if (!s.empty) {
-			error("Duplicate variable name in hierarchy detected for device '" + d.name + "', variable '" + s.keySet.get(0) + "'",
-						IoTPackage.eINSTANCE.device_SuperTypes,
-						DUPLICATE_VAR_OR_LIST
-					)
 		}
 		
 		return

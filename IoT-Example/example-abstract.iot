@@ -3,6 +3,7 @@ external ext_pop	// Pop the first element of a list
 external ext_isEmpty // Returns a bool indicating an empty list if true
 external ext_print 	// Prints a message
 external ext_avg	// Calculates the average of a list of values
+external ext_str_to_float // A cast function
 
 connectionConfig EdgeWifi {
 	type:WLAN
@@ -15,11 +16,15 @@ abstract edge device AbstractBase {
 	var basevar = 0
 }
 
+abstract fog device AbstractVariables {
+	var _true = true
+	var _false = false
+}
+
 abstract edge device AbstractLightSensor {
 	list lightLevels
+	var lightLevelsLength
 	var lightLevel
-	var lower = 90
-	var upper = 300
 	var NIL
 	
 	/*
@@ -29,10 +34,13 @@ abstract edge device AbstractLightSensor {
 		read from LIGHTSENSOR -> to lightLevel
 		ext_print of lightLevel -> to NIL
 		
-		// Record values that are exceeding boundaries
-		if lightLevel > lower && lightLevel < upper{
-			read var lightLevel -> add to lightLevels
-		}
+		read var lightLevel -> add to lightLevels
+		
+		// Do not exceed a list length higher than 20
+		/*ext_length of lightLevels -> to lightLevelsLength
+		if lightLevelsLength >= 20 {
+			ext_pop of lightLevels -> to NIL
+		}*/
 	}
 }
 
@@ -53,7 +61,7 @@ edge device Harvester extends AbstractLightSensor, AbstractLEDActuator, Abstract
 	var isEmpty
 	
 	// Allows communication to this device
-	listen on 192.168.0.21:9123 -> to turnOnLED
+	//listen on 192.168.0.21:9123 -> to turnOnLED
 	
 	/*
 	 * Send to fog controller loop
@@ -61,39 +69,50 @@ edge device Harvester extends AbstractLightSensor, AbstractLEDActuator, Abstract
 	always {
 		ext_isEmpty of lightLevels -> to isEmpty
 		if isEmpty == false {
-			LED ON // Indicate network activity
 			ext_pop of lightLevels -> send to Controller
-			LED OFF
 		}
 	}
 }
 
-
-fog device Controller {
-	var lightLevel
+fog device Controller extends AbstractVariables {
+	var lightLevel_str
+	var lightLevel = 0
 	var threshold = 100
-	var turnOff = false
-	var turnOn = true
+	var isLEDOn = false
 	var NIL
 	
-	/*
-	 * Thread that gets input from the light sensor
-	 */
-	listen on 192.168.0.3:8123 -> to lightLevel
+	listen on 192.168.0.3:8123 -> to lightLevel_str
 	
 	/*
 	 * Thread that interacts with the actuator
 	 */
-	always {
+	every 200 MILLISECONDS {
+		ext_str_to_float of lightLevel_str -> to lightLevel
+		ext_print of lightLevel_str -> to NIL
+		ext_print of isLEDOn -> to NIL
+		
+		// Turn off LED if there is enough light and the LED is already turned on
 		if lightLevel > threshold {
-			ext_print of lightLevel -> to NIL
-			read var turnOff -> send to Harvester
-		} else {
-			read var turnOn -> send to Harvester
+			//read var turnOff -> send to Harvester
+			
+			if isLEDOn == true {
+				read var _false -> to isLEDOn
+				ext_print of isLEDOn -> to NIL
+				
+			}
+		}
+
+		// Turn on LED if there is not enough light and the LED is off		
+		if lightLevel < threshold {
+			//read var turnOn -> send to Harvester
+			if isLEDOn == false {
+				read var _true -> to isLEDOn
+				ext_print of isLEDOn -> to NIL
+			}
 		}
 	}
 }
 
-cloud device Service {
-	listen on 192.168.0.3:8123 -> ext_print of value
+cloud device CloudService {
+	listen on 192.168.0.3:8124 -> ext_print of value
 }

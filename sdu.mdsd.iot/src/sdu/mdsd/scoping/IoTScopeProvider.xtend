@@ -41,25 +41,19 @@ class IoTScopeProvider extends AbstractIoTScopeProvider {
 	
 	def protected IScope scopeForVariable(EObject context) {
 		val container = context.eContainer
-		
 		switch container {
-			EdgeDevice | FogDevice | CloudDevice: {
-				println("Container is a Device")
-				
-				// Search for Variables within the whole hierarchy
+			EdgeDevice | FogDevice | CloudDevice: {				
+				// Search for Variables within the hierarchy
 				val currentScopeVars = container.deviceHierarchyVariables
 				return Scopes.scopeFor(currentScopeVars)
 			}
 			Program: {
-				println("Container is a Program")
 				return Scopes.scopeFor(container.variables,
 										scopeForVariable(container)) // outer scope, i.e. super types
 			}
-			
 			default: {
-				println("Container is default")
 				scopeForVariable(container)
 			}
 		}
-	}	
+	}
 }

@@ -33,3 +33,8 @@ def ext_print(message):
     '''
     print(message)
 
+def ext_str_to_float(str_value):
+    if (str_value != None):
+        return float(str_value)
+    else:
+        return 0

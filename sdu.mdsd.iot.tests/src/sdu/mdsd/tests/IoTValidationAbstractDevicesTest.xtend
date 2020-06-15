@@ -98,6 +98,7 @@ class IoTValidationAbstractDevicesTest {
 		)
 	}
 	
+	/*
 	@Test
 	def testDuplicateVarOrListInHierarchy1() {
 		val model = '''
@@ -154,5 +155,5 @@ class IoTValidationAbstractDevicesTest {
 		model.assertError(IoTPackage.eINSTANCE.device,
 						  IoTValidator.DUPLICATE_VAR_OR_LIST
 		)
-	}
+	}*/
 }

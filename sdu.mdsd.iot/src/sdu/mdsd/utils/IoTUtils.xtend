@@ -7,6 +7,7 @@ import sdu.mdsd.ioT.EdgeDevice
 import sdu.mdsd.ioT.FogDevice
 import sdu.mdsd.ioT.CloudDevice
 import java.util.List
+import sdu.mdsd.ioT.VarOrList
 
 class IoTUtils {
 	
@@ -64,28 +65,27 @@ class IoTUtils {
 	}
 	
 	def List<Device> deviceHierarchyDFS2(Device d) {
-		d.deviceHierarchyDFS2(new ArrayList<Device>, new ArrayList<Device>)
+		d.deviceHierarchyDFS2(new ArrayList<Device>)
 	}
 	
-	def List<Device> deviceHierarchyDFS2(Device d, List<Device> discovered, List<Device> hierarchy) {
+	def List<Device> deviceHierarchyDFS2(Device d, List<Device> discovered) {
 		
 		discovered.add(d)
-		hierarchy.add(d)
 		
 		for (v : d.superTypes) {
 			if (!discovered.contains(v)) { // If "undiscovered"
-				deviceHierarchyDFS2(v, discovered, hierarchy)
+				deviceHierarchyDFS2(v, discovered)
 			}
 		}
 		
-		
-		return hierarchy
+		return discovered
 	}
 	
 	
 	def deviceHierarchyVariables(Device d) {
-		val h = d.deviceHierarchyDFS				
-		return h.map[program.variables].flatten
+		//val h = d.deviceHierarchyDFS				
+		//return h.map[program.variables].flatten
+		d.findTypesInHierarchy(VarOrList)
 	}
 	
 	def getNonAbstractDevices(Iterator<Device> devices) {

@@ -121,7 +121,19 @@ class IoTParsingTest {
 		
 		val hierarchyVarOrList = subdevice.findTypesInHierarchy(VarOrList)
 		
-		Assertions.assertEquals(subdevice, hierarchyVarOrList.get(0))
+		// Given the model above, this is the order in which VarOrList should be overridden by sub-devices
+		Assertions.assertEquals("basevar", hierarchyVarOrList.get(0).name)
+		Assertions.assertEquals("LEDAction", hierarchyVarOrList.get(1).name)
+		Assertions.assertEquals("NIL", hierarchyVarOrList.get(2).name)
+		Assertions.assertEquals("NIL", hierarchyVarOrList.get(3).name)
+		Assertions.assertEquals("lightbaseVar", hierarchyVarOrList.get(4).name)
+		Assertions.assertEquals("lightLevels", hierarchyVarOrList.get(5).name)
+		Assertions.assertEquals("lightLevel", hierarchyVarOrList.get(6).name)
+		Assertions.assertEquals("lower", hierarchyVarOrList.get(7).name)
+		Assertions.assertEquals("upper", hierarchyVarOrList.get(8).name)
+		Assertions.assertEquals("NIL2", hierarchyVarOrList.get(9).name)
+		Assertions.assertEquals("isEmpty", hierarchyVarOrList.get(10).name)
+		
 	}
 	
 	def getTestModel() {
